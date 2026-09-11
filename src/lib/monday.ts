@@ -16,7 +16,7 @@ export interface Product {
 
 export async function fetchProductsFromMonday(): Promise<Product[]> {
   const apiKey = process.env.MONDAY_API_KEY;
-  const boardId = process.env.MONDAY_BOARD_ID;
+  const boardId = process.env.MONDAY_BOARD_ID?.trim();
 
   if (!apiKey || !boardId) {
     console.error('⚠️ Mangler MONDAY_API_KEY eller MONDAY_BOARD_ID.');
