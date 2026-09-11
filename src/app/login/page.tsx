@@ -25,8 +25,8 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        router.push('/');
-        router.refresh();
+        // Tvinger en hard omdirigering slik at cookien registreres umiddelbart av middleware
+        window.location.href = '/';
       } else {
         setError('Feil passord. Vennligst prøv igjen.');
       }

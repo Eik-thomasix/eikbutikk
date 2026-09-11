@@ -11,8 +11,8 @@ export async function POST(request: Request) {
     if (password === correctPassword) {
       const response = NextResponse.json({ success: true });
       
-      // Sett en sikker cookie som varer i 30 dager
-      response.cookies.set('eikbutikk_auth', 'authenticated', {
+      // Sett en sikker cookie som matcher middleware (site_access)
+      response.cookies.set('site_access', 'authenticated', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
