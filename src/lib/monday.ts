@@ -14,25 +14,72 @@ export interface Product {
   views: number;
 }
 
+interface MondayAsset {
+  id?: string;
+  name?: string;
+  public_url?: string;
+  url?: string;
+  file_extension?: string;
+}
+
+interface MondayColumnValue {
+  id: string;
+  text?: string | null;
+  value?: string | null;
+  column?: {
+    title?: string | null;
+  } | null;
+}
+
+interface MondayItem {
+  id: string;
+  name: string;
+  created_at?: string | null;
+  updates?: Array<{
+    body?: string | null;
+  }>;
+  assets?: MondayAsset[];
+  column_values?: MondayColumnValue[];
+}
+
 export async function fetchProductsFromMonday(): Promise<Product[]> {
-  const apiKey = process.env.MONDAY_API_KEY;
+  const apiKey = process.env.MONDAY_API_KEY?.trim();
   const boardId = process.env.MONDAY_BOARD_ID?.trim();
 
+  console.log('🔍 Starter henting av produkter fra Monday');
+  console.log('🔍 API-nøkkel finnes:', Boolean(apiKey));
+  console.log(
+    '🔍 Board-ID etter opprydding:',
+    boardId || 'MANGLER'
+  );
+
   if (!apiKey || !boardId) {
-    console.error('⚠️ Mangler MONDAY_API_KEY eller MONDAY_BOARD_ID.');
+    console.error(
+      '⚠️ Mangler MONDAY_API_KEY eller MONDAY_BOARD_ID.'
+    );
+
     return [];
   }
 
   const query = `
     query {
-      boards (ids: ${boardId}) {
-        items_page (limit: 100) {
+      boards(ids: ${boardId}) {
+        id
+        name
+        items_page(limit: 100) {
           items {
             id
             name
             created_at
-            updates (limit: 1) {
+            updates(limit: 1) {
               body
+            }
+            assets {
+              id
+              name
+              public_url
+              url
+              file_extension
             }
             column_values {
               id
@@ -40,16 +87,6 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
               value
               column {
                 title
-              }
-              ... on FileValue {
-                files {
-                  ... on MondayResource {
-                    public_url
-                  }
-                  ... on Asset {
-                    public_url
-                  }
-                }
               }
             }
           }
@@ -59,128 +96,368 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
   `;
 
   try {
-    const response = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': apiKey,
-        'API-Version': '2023-10',
-      },
-      body: JSON.stringify({ query }),
-      cache: 'no-store',
-    });
+    const response = await fetch(
+      'https://api.monday.com/v2',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: apiKey,
+          'API-Version': '2023-10',
+        },
+        body: JSON.stringify({ query }),
+        cache: 'no-store',
+      }
+    );
+
+    console.log(
+      '🔍 Monday HTTP-status:',
+      response.status
+    );
+
+    console.log(
+      '🔍 Monday HTTP-status tekst:',
+      response.statusText
+    );
 
     const data = await response.json();
 
-    if (data.errors) {
-      console.error('❌ Monday API Feil:', JSON.stringify(data.errors, null, 2));
+    if (!response.ok) {
+      console.error(
+        '❌ Monday svarte med HTTP-feil:',
+        response.status,
+        response.statusText
+      );
+
+      console.error(
+        '❌ Respons fra Monday:',
+        JSON.stringify(data, null, 2)
+      );
+
       return [];
     }
 
-    const items = data?.data?.boards?.[0]?.items_page?.items || [];
+    if (data.errors) {
+      console.error(
+        '❌ Monday GraphQL-feil:',
+        JSON.stringify(data.errors, null, 2)
+      );
+
+      return [];
+    }
+
+    const boards = data?.data?.boards || [];
+
+    console.log(
+      '🔍 Antall boards returnert:',
+      boards.length
+    );
+
+    if (boards.length === 0) {
+      console.error(
+        `❌ Monday returnerte ikke board ${boardId}. Kontroller at API-nøkkelen har tilgang til boardet.`
+      );
+
+      return [];
+    }
+
+    const board = boards[0];
+
+    console.log('✅ Board funnet:', {
+      id: board.id,
+      name: board.name,
+    });
+
+    const items: MondayItem[] =
+      board?.items_page?.items || [];
+
+    console.log(
+      '🔍 Antall items returnert fra Monday:',
+      items.length
+    );
+
+    if (items.length === 0) {
+      console.warn(
+        '⚠️ Boardet ble funnet, men Monday returnerte ingen items.'
+      );
+
+      return [];
+    }
 
     const parsedProducts = items
-      .map((item: any) => {
-        const getColObj = (title: string) => {
-          return item.column_values?.find((c: any) => {
-            if (!c.column?.title) return false;
-            const colTitle = c.column.title.trim().toLowerCase();
-            const targetTitle = title.trim().toLowerCase();
-            return colTitle === targetTitle || colTitle.includes(targetTitle);
-          });
+      .map((item): Product | null => {
+        const getColumnObject = (
+          title: string
+        ): MondayColumnValue | undefined => {
+          const targetTitle = title
+            .trim()
+            .toLowerCase();
+
+          return item.column_values?.find(
+            (columnValue) => {
+              const columnTitle =
+                columnValue.column?.title
+                  ?.trim()
+                  .toLowerCase();
+
+              if (!columnTitle) {
+                return false;
+              }
+
+              return (
+                columnTitle === targetTitle ||
+                columnTitle.includes(targetTitle)
+              );
+            }
+          );
         };
 
-        const getColValue = (title: string) => {
-          const col = getColObj(title);
-          return col && col.text ? col.text.trim() : '';
+        const getColumnValue = (
+          title: string
+        ): string => {
+          const column = getColumnObject(title);
+
+          return typeof column?.text === 'string'
+            ? column.text.trim()
+            : '';
         };
 
-        const status = getColValue('Status');
-        const stockStr = getColValue('Lager').replace(/[^0-9]/g, '');
-        const stock = stockStr !== '' ? parseInt(stockStr, 10) : 1; // Default til 1 om kolonne mangler
+        const status = getColumnValue('Status');
+        const normalizedStatus = status.toLowerCase();
 
-        // Fleksibel statussjekk: Aksepterer "Aktiv", "Active", "Ja", eller om feltet er tomt
-        const isActive = 
-          !status || 
-          status.toLowerCase().includes('aktiv') || 
-          status.toLowerCase().includes('active') ||
-          status.toLowerCase() === 'ja';
+        const stockString = getColumnValue(
+          'Lager'
+        ).replace(/[^0-9]/g, '');
+
+        const stock =
+          stockString !== ''
+            ? parseInt(stockString, 10)
+            : 1;
+
+        const isActive =
+          !status ||
+          normalizedStatus === 'aktiv' ||
+          normalizedStatus === 'active' ||
+          normalizedStatus === 'ja' ||
+          normalizedStatus.includes('aktiv');
+
+        console.log('🔍 Behandler Monday-item:', {
+          id: item.id,
+          name: item.name,
+          status,
+          isActive,
+          stock,
+        });
 
         if (!isActive) {
+          console.log(
+            `⏭️ Hopper over "${item.name}" fordi status er "${status}".`
+          );
+
           return null;
         }
 
-        // Beskrivelse fra Updates eller felt
         const latestUpdateHtml =
           item.updates?.[0]?.body ||
-          getColValue('Beskrivelse') ||
+          getColumnValue('Beskrivelse') ||
           '<p>Ingen detaljert beskrivelse tilgjengelig.</p>';
 
-        // Hent bilde-URLer
-        let imageList: string[] = [];
-        const imageCol = getColObj('Bilder') || getColObj('Bilde');
+        const imageExtensions = new Set([
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'gif',
+          'avif',
+          'svg',
+        ]);
 
-        if (imageCol) {
-          if (Array.isArray(imageCol.files)) {
-            imageList = imageCol.files
-              .map((file: any) => file.public_url || file.url)
-              .filter((url: string) => url && url.startsWith('http'));
-          }
+        let imageList = (item.assets || [])
+          .filter((asset) => {
+            const extension = asset.file_extension
+              ?.toLowerCase()
+              .replace('.', '');
 
-          if (imageList.length === 0 && imageCol.value) {
-            try {
-              const parsedVal = JSON.parse(imageCol.value);
-              if (parsedVal.files && Array.isArray(parsedVal.files)) {
-                imageList = parsedVal.files
-                  .map((f: any) => f.url || f.public_url)
-                  .filter((url: string) => url && url.startsWith('http'));
-              }
-            } catch (e) {}
-          }
+            if (extension) {
+              return imageExtensions.has(extension);
+            }
 
-          if (imageList.length === 0 && imageCol.text) {
-            imageList = imageCol.text
+            const fileName =
+              asset.name?.toLowerCase() || '';
+
+            return Array.from(imageExtensions).some(
+              (allowedExtension) =>
+                fileName.endsWith(
+                  `.${allowedExtension}`
+                )
+            );
+          })
+          .map((asset) => {
+            return asset.public_url || asset.url || '';
+          })
+          .filter((url): url is string => {
+            return (
+              typeof url === 'string' &&
+              url.startsWith('http')
+            );
+          });
+
+        imageList = Array.from(new Set(imageList));
+
+        const imageColumn =
+          getColumnObject('Bilder') ||
+          getColumnObject('Bilde');
+
+        if (
+          imageList.length === 0 &&
+          imageColumn?.text
+        ) {
+          const imageUrlsFromText =
+            imageColumn.text
               .split(',')
-              .map((url: string) => url.trim())
-              .filter((url: string) => url.startsWith('http'));
+              .map((url) => url.trim())
+              .filter((url) =>
+                url.startsWith('http')
+              );
+
+          imageList.push(...imageUrlsFromText);
+        }
+
+        if (
+          imageList.length === 0 &&
+          imageColumn?.value
+        ) {
+          try {
+            const parsedValue = JSON.parse(
+              imageColumn.value
+            );
+
+            const files = Array.isArray(
+              parsedValue?.files
+            )
+              ? parsedValue.files
+              : [];
+
+            const imageUrlsFromValue = files
+              .map(
+                (file: {
+                  url?: string;
+                  public_url?: string;
+                }) => {
+                  return (
+                    file.public_url ||
+                    file.url ||
+                    ''
+                  );
+                }
+              )
+              .filter(
+                (url: string) =>
+                  typeof url === 'string' &&
+                  url.startsWith('http')
+              );
+
+            imageList.push(...imageUrlsFromValue);
+          } catch {
+            console.warn(
+              `⚠️ Kunne ikke tolke bildefeltet for "${item.name}".`
+            );
           }
         }
+
+        imageList = Array.from(new Set(imageList));
 
         if (imageList.length === 0) {
           imageList = ['/EIKLOGO.png'];
         }
 
-        const listPriceStr = getColValue('Veil').replace(/[^0-9]/g, '') || getColValue('Pris').replace(/[^0-9]/g, '');
-        const salePriceStr = getColValue('Nettpris').replace(/[^0-9]/g, '') || listPriceStr;
+        const listPriceString =
+          getColumnValue('Veil Pris').replace(
+            /[^0-9]/g,
+            ''
+          ) ||
+          getColumnValue('Veil').replace(
+            /[^0-9]/g,
+            ''
+          ) ||
+          getColumnValue('Pris').replace(
+            /[^0-9]/g,
+            ''
+          );
 
-        const listPrice = parseFloat(listPriceStr) || 0;
-        const salePrice = parseFloat(salePriceStr) || listPrice;
-        const shippingMethod = getColValue('Frakt');
+        const salePriceString =
+          getColumnValue('Nettpris').replace(
+            /[^0-9]/g,
+            ''
+          ) || listPriceString;
+
+        const listPrice =
+          parseFloat(listPriceString) || 0;
+
+        const salePrice =
+          parseFloat(salePriceString) ||
+          listPrice;
+
+        const shippingMethod =
+          getColumnValue('Fraktmetode') ||
+          getColumnValue('Frakt');
+
+        const pickupOnly =
+          shippingMethod === '' ||
+          shippingMethod
+            .toLowerCase()
+            .includes('henting') ||
+          shippingMethod
+            .toLowerCase()
+            .includes('butikk');
 
         return {
           id: item.id,
           name: item.name,
-          itemNumber: getColValue('Varenummer') || getColValue('Varenr') || 'Uten varenr',
-          category: getColValue('Kategori') || 'Utstyr & Maskiner',
+          itemNumber:
+            getColumnValue('Varenummer') ||
+            getColumnValue('Varenr') ||
+            'Uten varenr',
+          category:
+            getColumnValue('Kategori') ||
+            'Utstyr & Maskiner',
           images: imageList,
-          listPrice: listPrice,
-          salePrice: salePrice,
-          stock: stock,
-          shortInfo: getColValue('Kort Info') || getColValue('Info') || 'Kvalitetsutstyr fra Eiksenteret Sortland.',
+          listPrice,
+          salePrice,
+          stock,
+          shortInfo:
+            getColumnValue('Kort Info') ||
+            getColumnValue('Info') ||
+            'Kvalitetsutstyr fra Eiksenteret Sortland.',
           descriptionHtml: latestUpdateHtml,
-          createdAt: item.created_at || new Date().toISOString(),
-          pickupOnly:
-            shippingMethod.toLowerCase().includes('henting') ||
-            shippingMethod.toLowerCase().includes('butikk') ||
-            shippingMethod === '',
-          views: parseInt(getColValue('Visninger'), 10) || 0,
+          createdAt:
+            item.created_at ||
+            new Date().toISOString(),
+          pickupOnly,
+          views:
+            parseInt(
+              getColumnValue('Visninger'),
+              10
+            ) || 0,
         };
       })
-      .filter(Boolean) as Product[];
+      .filter(
+        (product): product is Product =>
+          product !== null
+      );
+
+    console.log(
+      '✅ Antall aktive produkter etter filtrering:',
+      parsedProducts.length
+    );
 
     return parsedProducts;
   } catch (error) {
-    console.error('❌ Kritisk feil ved henting fra Monday:', error);
+    console.error(
+      '❌ Kritisk feil ved henting fra Monday:',
+      error
+    );
+
     return [];
   }
 }
