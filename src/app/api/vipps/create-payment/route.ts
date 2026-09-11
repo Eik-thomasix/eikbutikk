@@ -13,26 +13,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generer unikt ordrenummer for Vipps (f.eks. EIK-1726054800)
     const orderId = `EIK-${Date.now().toString().slice(-8)}`;
 
-    const rawBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://eikbutikk.no';
+    const rawBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const baseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`;
     const returnUrl = `${baseUrl}/product/${product.id}?vipps_order=${orderId}&status=success`;
 
-    // Opprett betalingsøkt hos Vipps
+    const cleanPhone = customer.phone ? customer.phone.replace(/\D/g, '') : undefined;
+
     const vippsResponse = await createVippsPaymentOrder({
       orderId: orderId,
       amountInNok: product.salePrice,
       productName: product.name,
       returnUrl: returnUrl,
-      customerPhone: customer.phone,
+      customerPhone: cleanPhone,
     });
 
     return NextResponse.json({
       success: true,
       orderId: orderId,
-      url: vippsResponse.url || vippsResponse.checkoutFrontendUrl,
+      url: vippsResponse.url,
     });
 
   } catch (error: any) {

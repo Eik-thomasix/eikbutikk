@@ -54,32 +54,33 @@ export async function createVippsPaymentOrder(params: {
   const token = await getVippsAccessToken();
   const amountInEre = Math.round(params.amountInNok * 100);
 
-  // Sørg for at callbackUrl alltid bruker HTTPS
-  const rawBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://eikbutikk.no';
+  const rawBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const cleanBaseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`;
 
   const payload = {
-    merchantInfo: {
-      merchantSerialNumber: process.env.VIPPS_MERCHANT_SERIAL_NUMBER,
-      callbackUrl: `${cleanBaseUrl}/api/vipps/callback`,
-      returnUrl: params.returnUrl,
+    amount: {
+      value: amountInEre,
+      currency: 'NOK',
     },
-    customerInfo: params.customerPhone ? {
-      mobileNumber: params.customerPhone.replace(/\s+/g, ''),
-    } : undefined,
-    transaction: {
-      amount: amountInEre,
-      transactionText: `Kjøp av ${params.productName.slice(0, 30)} på Eikbutikk.no`,
+    paymentMethod: {
+      type: 'WALLET',
     },
+    reference: params.orderId,
+    userFlow: 'WEB_REDIRECT',
+    returnUrl: params.returnUrl,
+    paymentDescription: `Kjøp av ${params.productName.slice(0, 30)} på Eikbutikk.no`,
   };
 
-  const response = await fetch(`${baseUrl}/ecomm/v2/payments/${params.orderId}`, {
-    method: 'PUT',
+  console.log('🔍 Kaller Vipps URL:', `${baseUrl}/epayment/v1/payments`);
+  
+  const response = await fetch(`${baseUrl}/epayment/v1/payments`, {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
       'Ocp-Apim-Subscription-Key': process.env.VIPPS_SUBSCRIPTION_KEY || '',
       'Merchant-Serial-Number': process.env.VIPPS_MERCHANT_SERIAL_NUMBER || '',
+      'Idempotency-Key': params.orderId,
     },
     body: JSON.stringify(payload),
   });
@@ -91,5 +92,8 @@ export async function createVippsPaymentOrder(params: {
     throw new Error(data.message || data[0]?.errorMessage || 'Kunne ikke opprette betaling hos Vipps.');
   }
 
-  return data;
+  return {
+    url: data.redirectUrl,
+    reference: data.reference,
+  };
 }

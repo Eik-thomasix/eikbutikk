@@ -1,224 +1,177 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Product } from '@/lib/monday';
-import { X, MapPin, Truck, Smartphone, AlertCircle, Loader2 } from 'lucide-react';
 
-interface CheckoutModalProps {
-  product: Product;
-  onClose: () => void;
-  onSuccess: () => void;
+interface Product {
+  id: string;
+  name: string;
+  salePrice: number;
 }
 
-export default function CheckoutModal({ product, onClose }: CheckoutModalProps) {
+interface CheckoutModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  product: Product;
+}
+
+export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModalProps) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [deliveryMethod, setDeliveryMethod] = useState<'Henting i butikk' | 'Postpakke'>(
-    'Henting i butikk'
-  );
+  if (!isOpen) return null;
 
-  const handleStartVippsPayment = async (e: React.FormEvent) => {
+  const handleVippsPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage('');
 
     try {
-      // 1. Lagre midlertidig kundedata i localStorage før omdirigering til Vipps
-      const pendingOrder = {
-        product,
-        customer: { name, phone, email, deliveryMethod },
-      };
-      localStorage.setItem('eik_pending_order', JSON.stringify(pendingOrder));
-
-      // 2. Opprett betalingsøkt hos Vipps via backend-endepunktet
-      const res = await fetch('/api/vipps/create-payment', {
+      // Relativ sti sikrer at kallet går til miljøet du befinner deg i (localhost:3000)
+      const response = await fetch('/api/vipps/create-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           product,
-          customer: { name, phone, email, deliveryMethod },
+          customer: {
+            name,
+            email,
+            phone,
+            address,
+            postalCode,
+            city,
+          },
         }),
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (data.success && data.url) {
-        // Send kunden direkte til Vipps sin betalingsportal
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Kunne ikke starte betalingen med Vipps.');
+      }
+
+      // Send kunden videre til Vipps sin betalingsskjerm
+      if (data.url) {
         window.location.href = data.url;
       } else {
-        setErrorMessage(data.message || 'Kunne ikke starte Vipps betaling. Vennligst prøv igjen.');
-        setLoading(false);
+        throw new Error('Mottok ingen omdirigerings-URL fra Vipps.');
       }
-    } catch (err) {
-      console.error('Feil ved Vipps-oppstart:', err);
-      setErrorMessage('Tilkoblingsfeil mot betalingstjenesten.');
+    } catch (err: any) {
+      console.error('❌ Feil ved opprettelse av betaling:', err);
+      setErrorMessage(err.message || 'Det oppstod en feil. Prøv igjen senere.');
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden relative border border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
         >
-          <X className="w-5 h-5" />
+          ✕
         </button>
 
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-[#ff5b24] text-white p-2.5 rounded-xl shadow-sm">
-              <Smartphone className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">Kjøp med Vipps</h3>
-              <p className="text-xs text-gray-500">Eiksenteret Sortland (Org.nr 936 858 031)</p>
-            </div>
-          </div>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">Kasse - {product.name}</h2>
+        <p className="text-gray-600 mb-6">Totalpris: <strong>{product.salePrice} kr</strong></p>
 
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 flex gap-4 items-center">
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              className="w-16 h-16 object-contain rounded-lg bg-white p-1 border"
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+            {errorMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleVippsPayment} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Fullt navn</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-gray-900"
+              placeholder="Ola Nordmann"
             />
-            <div>
-              <h4 className="font-bold text-gray-900 text-sm">{product.name}</h4>
-              <p className="text-xs text-gray-500">Varenr: {product.itemNumber}</p>
-              <p className="text-lg font-extrabold text-red-600 mt-1">
-                {product.salePrice.toLocaleString('no-NO')} kr
-              </p>
-            </div>
           </div>
 
-          <form onSubmit={handleStartVippsPayment} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">E-post</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-gray-900"
+              placeholder="ola@example.no"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Telefonnummer</label>
+            <input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-gray-900"
+              placeholder="48161242"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Adresse</label>
+            <input
+              type="text"
+              required
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-gray-900"
+              placeholder="Storgata 1"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                Fullt Navn
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Postnummer</label>
               <input
                 type="text"
                 required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ola Nordmann"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-sm text-gray-900"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-gray-900"
+                placeholder="8400"
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                  Telefon (Vipps)
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="900 00 000"
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-sm text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                  E-post (kvittering)
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ola@example.no"
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-sm text-gray-900"
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">
-                Leveringsmetode
-              </label>
-              <div className="grid grid-cols-1 gap-2">
-                <label
-                  className={`p-3 border rounded-xl flex items-center gap-3 cursor-pointer transition-all ${
-                    deliveryMethod === 'Henting i butikk'
-                      ? 'border-red-600 bg-red-50/50 text-red-900'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="delivery"
-                    checked={deliveryMethod === 'Henting i butikk'}
-                    onChange={() => setDeliveryMethod('Henting i butikk')}
-                    className="accent-red-600"
-                  />
-                  <MapPin className="w-5 h-5 text-red-600" />
-                  <div className="text-xs">
-                    <div className="font-bold">Hentes i butikk (Gratis)</div>
-                    <div className="text-gray-500">Verkstedveien 2, 8402 Sortland</div>
-                  </div>
-                </label>
-
-                {!product.pickupOnly && (
-                  <label
-                    className={`p-3 border rounded-xl flex items-center gap-3 cursor-pointer transition-all ${
-                      deliveryMethod === 'Postpakke'
-                        ? 'border-red-600 bg-red-50/50 text-red-900'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="delivery"
-                      checked={deliveryMethod === 'Postpakke'}
-                      onChange={() => setDeliveryMethod('Postpakke')}
-                      className="accent-red-600"
-                    />
-                    <Truck className="w-5 h-5 text-blue-600" />
-                    <div className="text-xs">
-                      <div className="font-bold">Sendes som Postpakke</div>
-                      <div className="text-gray-500">Beregnes / klargjøres av butikk</div>
-                    </div>
-                  </label>
-                )}
-              </div>
+              <label className="block text-sm font-medium text-gray-700">Poststed</label>
+              <input
+                type="text"
+                required
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-gray-900"
+                placeholder="Sortland"
+              />
             </div>
+          </div>
 
-            {errorMessage && (
-              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs">
-                {errorMessage}
-              </div>
-            )}
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-900 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <span>
-                <strong>Forbehold:</strong> Vi tar forbehold om skrive- og trykkfeil i pris og spesifikasjoner, samt endringer i lagerbeholdning (mellomdagssalg). Ved avvik vil vi kontakte deg omgående.
-              </span>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#ff5b24] hover:bg-[#e04b19] text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-base mt-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Kobler til Vipps...
-                </>
-              ) : (
-                'Betal med Vipps nå'
-              )}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-6 bg-[#ff5b24] hover:bg-[#e04b18] text-white font-bold py-3 px-4 rounded-md shadow transition duration-200 flex items-center justify-center gap-2"
+          >
+            {loading ? 'Behandler...' : 'Betal med Vipps nå'}
+          </button>
+        </form>
       </div>
     </div>
   );
