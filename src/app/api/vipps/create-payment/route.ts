@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     // Generer unikt ordrenummer for Vipps (f.eks. EIK-1726054800)
     const orderId = `EIK-${Date.now().toString().slice(-8)}`;
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const rawBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://eikbutikk.no';
+    const baseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`;
     const returnUrl = `${baseUrl}/product/${product.id}?vipps_order=${orderId}&status=success`;
 
     // Opprett betalingsøkt hos Vipps
@@ -35,9 +36,9 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('❌ Feil ved opprettelse av Vipps betaling:', error);
+    console.error('❌ Feil i /api/vipps/create-payment:', error);
     return NextResponse.json(
-      { success: false, message: error.message || 'Kunne ikke starte Vipps-betaling' },
+      { success: false, message: error.message || 'Kunne ikke opprette betaling hos Vipps.' },
       { status: 500 }
     );
   }
