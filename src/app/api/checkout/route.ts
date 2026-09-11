@@ -3,6 +3,9 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
 
+// Sett oppdatert test-epostadresse for mottak av test-eposter:
+const TEST_EMAIL_ADDRESS = 'thomasix@gmail.com';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -18,86 +21,87 @@ export async function POST(request: Request) {
     // 1. Forsøk e-postutsendinger via Resend
     if (process.env.RESEND_API_KEY) {
       try {
-        // A) Send ordrebekreftelse til kunden
-        if (customer.email) {
-          await resend.emails.send({
-            from: 'Eiksenteret Sortland <onboarding@resend.dev>',
-            to: [customer.email],
-            subject: `Ordrebekreftelse - Eikbutikk.no (${product.name})`,
-            html: `
-              <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                <div style="background-color: #d71920; color: white; padding: 20px; text-align: center;">
-                  <h1 style="margin: 0; font-size: 22px;">Eikbutikk.no</h1>
-                  <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Eiksenteret Sortland</p>
-                </div>
-                
-                <div style="padding: 24px;">
-                  <h2 style="margin-top: 0; font-size: 18px; color: #111827;">Takk for din bestilling, ${customer.name}!</h2>
-                  
-                  <p style="font-size: 14px; color: #374151; line-height: 1.6;">
-                    Vi har mottatt din bestilling. Vennligst merk at din ordre <strong>behandles manuelt av våre butikkmedarbeidere</strong> på Sortland før den ferdigstilles.
-                  </p>
+        // A) ORDREBEKREFTELSE TIL KUNDEN
+        // (I testmodus sendes denne til din oppgitte e-post slik at du får se layouten)
+        const recipientCustomerEmail = TEST_EMAIL_ADDRESS;
 
-                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 20px 0;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 15px; color: #d71920;">Bestilte varer</h3>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                      <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td style="padding: 8px 0; font-weight: bold;">Varenr:</td>
-                        <td style="padding: 8px 0; text-align: right;">${product.itemNumber}</td>
-                      </tr>
-                      <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td style="padding: 8px 0; font-weight: bold;">Produkt:</td>
-                        <td style="padding: 8px 0; text-align: right;">${product.name}</td>
-                      </tr>
-                      <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td style="padding: 8px 0; font-weight: bold;">Levering:</td>
-                        <td style="padding: 8px 0; text-align: right;">${customer.deliveryMethod}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; font-weight: bold; font-size: 16px;">Totalt betalt:</td>
-                        <td style="padding: 8px 0; text-align: right; font-weight: bold; font-size: 16px; color: #d71920;">${product.salePrice.toLocaleString('no-NO')} kr</td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <div style="background-color: #f3f4f6; padding: 14px; border-radius: 6px; font-size: 13px; color: #374151; margin-bottom: 20px; line-height: 1.5;">
-                    <strong>Henting / Leveringsinformasjon:</strong><br />
-                    ${
-                      customer.deliveryMethod === 'Henting i butikk'
-                        ? 'Varen klargjøres for deg og kan hentes i vår butikk i <strong>Verkstedveien 2, 8402 Sortland</strong> så snart våre medarbeidere har behandlet ordren. Åpningstider: Man-Fre 08:00–16:00.'
-                        : 'Våre medarbeidere pakker og gjør varen klar for sending, og den vil bli <strong>sendt så snart som mulig</strong> per post. Du vil bli kontaktet dersom det er behov for ytterligere fraktinformasjon.'
-                    }
-                  </div>
-
-                  <div style="background-color: #fffbebfb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 12px; color: #92400e; line-height: 1.5;">
-                    <strong>Forbehold og betingelser:</strong><br />
-                    Vi tar forbehold om skrive- og trykkfeil i pris, tekniske spesifikasjoner og produktbeskrivelser, samt endringer i lagerbeholdning (forbehold om mellomdagssalg i butikken før registrering). Dersom det skulle oppstå avvik eller at varen mot formodning er utsolgt, vil vi kontakte deg omgående for avklaring eller avbestilling.
-                  </div>
-
-                  <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
-
-                  <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.5;">
-                    <strong>Spørsmål om bestillingen?</strong><br />
-                    Eiksenteret Sortland | Verkstedveien 2, 8402 Sortland<br />
-                    Telefon: 76 12 13 60 | E-post: <a href="mailto:sortland@eiksenteret.no" style="color: #d71920; font-weight: bold;">sortland@eiksenteret.no</a>
-                  </p>
-                </div>
+        await resend.emails.send({
+          from: 'Eiksenteret Sortland <onboarding@resend.dev>',
+          to: [recipientCustomerEmail],
+          subject: `[KUNDE-KOPI] Ordrebekreftelse - Eikbutikk.no (${product.name})`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+              <div style="background-color: #d71920; color: white; padding: 20px; text-align: center;">
+                <h1 style="margin: 0; font-size: 22px;">Eikbutikk.no</h1>
+                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Eiksenteret Sortland</p>
               </div>
-            `,
-          });
-          console.log(`✉️ Ordrebekreftelse sendt til kunden: ${customer.email}`);
-        }
+              
+              <div style="padding: 24px;">
+                <h2 style="margin-top: 0; font-size: 18px; color: #111827;">Takk for din bestilling, ${customer.name}!</h2>
+                
+                <p style="font-size: 14px; color: #374151; line-height: 1.6;">
+                  Vi har mottatt din bestilling. Vennligst merk at din ordre <strong>behandles manuelt av våre butikkmedarbeidere</strong> på Sortland før den ferdigstilles.
+                </p>
 
-        // B) Send salgsrapport til butikken for SAP B1
+                <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 20px 0;">
+                  <h3 style="margin: 0 0 10px 0; font-size: 15px; color: #d71920;">Bestilte varer</h3>
+                  <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                      <td style="padding: 8px 0; font-weight: bold;">Varenr:</td>
+                      <td style="padding: 8px 0; text-align: right;">${product.itemNumber}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                      <td style="padding: 8px 0; font-weight: bold;">Produkt:</td>
+                      <td style="padding: 8px 0; text-align: right;">${product.name}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                      <td style="padding: 8px 0; font-weight: bold;">Levering:</td>
+                      <td style="padding: 8px 0; text-align: right;">${customer.deliveryMethod}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold; font-size: 16px;">Totalt betalt:</td>
+                      <td style="padding: 8px 0; text-align: right; font-weight: bold; font-size: 16px; color: #d71920;">${product.salePrice.toLocaleString('no-NO')} kr</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="background-color: #f3f4f6; padding: 14px; border-radius: 6px; font-size: 13px; color: #374151; margin-bottom: 20px; line-height: 1.5;">
+                  <strong>Henting / Leveringsinformasjon:</strong><br />
+                  ${
+                    customer.deliveryMethod === 'Henting i butikk'
+                      ? 'Varen klargjøres for deg og kan hentes i vår butikk i <strong>Verkstedveien 2, 8402 Sortland</strong> så snart våre medarbeidere har behandlet ordren. Åpningstider: Man-Fre 08:00–16:00.'
+                      : 'Våre medarbeidere pakker og gjør varen klar for sending, og den vil bli <strong>sendt så snart som mulig</strong> per post. Du vil bli kontaktet dersom det er behov for ytterligere fraktinformasjon.'
+                  }
+                </div>
+
+                <div style="background-color: #fffbebfb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 12px; color: #92400e; line-height: 1.5;">
+                  <strong>Forbehold og betingelser:</strong><br />
+                  Vi tar forbehold om skrive- og trykkfeil i pris, tekniske spesifikasjoner og produktbeskrivelser, samt endringer i lagerbeholdning (forbehold om mellomdagssalg i butikken før registrering). Dersom det skulle oppstå avvik eller at varen mot formodning er utsolgt, vil vi kontakte deg omgående for avklaring eller avbestilling.
+                </div>
+
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+
+                <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.5;">
+                  <strong>Spørsmål om bestillingen?</strong><br />
+                  Eiksenteret Sortland | Verkstedveien 2, 8402 Sortland<br />
+                  Telefon: 76 12 13 60 | E-post: <a href="mailto:sortland@eiksenteret.no" style="color: #d71920; font-weight: bold;">sortland@eiksenteret.no</a>
+                </p>
+              </div>
+            </div>
+          `,
+        });
+        console.log(`✉️ Ordrebekreftelse sendt til kunden (test: ${TEST_EMAIL_ADDRESS}).`);
+
+        // B) SALGSRAPPORT TIL BUTIKKEN (FOR SAP B1)
         await resend.emails.send({
           from: 'Eikbutikk Salg <onboarding@resend.dev>',
-          to: ['sortland@eiksenteret.no'],
-          subject: `[NYTT SALG EIKBUTIKK] Varenr: ${product.itemNumber} - ${product.name}`,
+          to: [TEST_EMAIL_ADDRESS],
+          subject: `[BUTIKK-RAPPORT] Nytt salg: Varenr ${product.itemNumber} - ${product.name}`,
           html: `
             <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
               <div style="background-color: #d71920; color: white; padding: 20px; text-align: center;">
                 <h1 style="margin: 0; font-size: 24px;">Eikbutikk.no - Salgsrapport</h1>
-                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Eiksenteret Sortland</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Eiksenteret Sortland Intern</p>
               </div>
               
               <div style="padding: 24px;">
@@ -118,7 +122,7 @@ export async function POST(request: Request) {
                     <td style="padding: 10px;">${customer.phone}</td>
                   </tr>
                   <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px; font-weight: bold;">E-post:</td>
+                    <td style="padding: 10px; font-weight: bold;">E-post (oppgitt av kunde):</td>
                     <td style="padding: 10px;">${customer.email}</td>
                   </tr>
                   <tr>
@@ -150,7 +154,7 @@ export async function POST(request: Request) {
             </div>
           `,
         });
-        console.log('✉️ Salgsrapport e-post sendt til butikken.');
+        console.log(`✉️ Salgsrapport e-post sendt til butikken (test: ${TEST_EMAIL_ADDRESS}).`);
       } catch (emailErr) {
         console.warn('⚠️ Advarsel: Kunne ikke sende e-post via Resend:', emailErr);
       }

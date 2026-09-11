@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX, Loader2 } from 'lucide-react';
+import { ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX, Loader2, ShieldCheck } from 'lucide-react';
 import { Product } from '@/lib/monday';
 import CheckoutModal from '@/components/CheckoutModal';
 
@@ -238,7 +238,7 @@ export default function HomePage() {
         />
       )}
 
-      {/* Footer med Forbehold */}
+      {/* Footer med godkjent Vipps-informasjon og Lenke til Salgsvilkår */}
       <footer className="bg-neutral-900 text-gray-400 text-sm py-12 border-t border-neutral-800 mt-12">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
@@ -252,9 +252,15 @@ export default function HomePage() {
           </div>
           <div>
             <h5 className="text-white font-bold mb-3 text-base">Om Eikbutikk.no</h5>
-            <p className="text-xs leading-relaxed">
+            <p className="text-xs leading-relaxed mb-3">
               Eikbutikk.no er Eiksenteret Sortland sin nettkanal for salg av tilbudsvarer, utstillingsmodeller og utvalgte produkter fra vårt sortiment. Registrert org.nr: 936 858 031.
             </p>
+            <button
+              onClick={() => router.push('/vilkar')}
+              className="text-xs text-red-500 hover:text-red-400 font-bold underline flex items-center gap-1"
+            >
+              <ShieldCheck className="w-4 h-4" /> Les våre fullstendige Salgsvilkår
+            </button>
           </div>
           <div>
             <h5 className="text-white font-bold mb-3 text-base">Betaling & Forbehold</h5>
