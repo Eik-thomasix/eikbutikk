@@ -23,10 +23,9 @@ export default function ProductDetailPage() {
         
         if (found) {
           setProduct(found);
-          // Sjekker at bilder finnes og at matrisen ikke er tom
           const initialImage = (found.images && found.images.length > 0) 
             ? found.images[0] 
-            : (found.imageUrl || '/honda.png');
+            : '/honda.png';
           setSelectedImage(initialImage);
         }
       } catch (err) {
@@ -63,7 +62,7 @@ export default function ProductDetailPage() {
 
   const productImages = (product.images && product.images.length > 0) 
     ? product.images 
-    : [product.imageUrl || '/honda.png'];
+    : ['/honda.png'];
 
   const discount =
     product.listPrice > product.salePrice
@@ -101,7 +100,6 @@ export default function ProductDetailPage() {
                 alt={product.name}
                 className="max-h-full max-w-full object-contain transition-all duration-300"
                 onError={(e) => {
-                  // Fallback om bildet feiler ved lasting
                   (e.target as HTMLImageElement).src = '/honda.png';
                 }}
               />
