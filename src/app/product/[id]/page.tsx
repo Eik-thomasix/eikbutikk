@@ -30,8 +30,8 @@ export default function ProductDetailPage() {
   const productId = Array.isArray(rawProductId)
     ? rawProductId[0]
     : rawProductId;
-  const vippsOrder = searchParams.get('vipps_order');
-
+  const vippsOrder = 
+  searchParams.get('vipps_order') || '';
   useEffect(() => {
     async function loadProduct() {
       try {
