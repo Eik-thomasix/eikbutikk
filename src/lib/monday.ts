@@ -23,7 +23,6 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
     return [];
   }
 
-  // GraphQL-spørring som henter både tekst, JSON-value og tilknyttede file assets
   const query = `
     query {
       boards (ids: ${boardId}) {
@@ -83,11 +82,12 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
     const parsedProducts = items
       .map((item: any) => {
         const getColObj = (title: string) => {
-          return item.column_values?.find(
-            (c: any) =>
-              c.column?.title &&
-              c.column.title.trim().toLowerCase() === title.trim().toLowerCase()
-          );
+          return item.column_values?.find((c: any) => {
+            if (!c.column?.title) return false;
+            const colTitle = c.column.title.trim().toLowerCase();
+            const targetTitle = title.trim().toLowerCase();
+            return colTitle === targetTitle || colTitle.includes(targetTitle);
+          });
         };
 
         const getColValue = (title: string) => {
@@ -97,31 +97,36 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
 
         const status = getColValue('Status');
         const stockStr = getColValue('Lager').replace(/[^0-9]/g, '');
-        const stock = parseInt(stockStr, 10) || 0;
+        const stock = stockStr !== '' ? parseInt(stockStr, 10) : 1; // Default til 1 om kolonne mangler
 
-        if (status.toLowerCase() !== 'aktiv' || stock <= 0) {
+        // Fleksibel statussjekk: Aksepterer "Aktiv", "Active", "Ja", eller om feltet er tomt
+        const isActive = 
+          !status || 
+          status.toLowerCase().includes('aktiv') || 
+          status.toLowerCase().includes('active') ||
+          status.toLowerCase() === 'ja';
+
+        if (!isActive) {
           return null;
         }
 
-        // Henter siste Update (HTML-tekst) fra Monday
+        // Beskrivelse fra Updates eller felt
         const latestUpdateHtml =
           item.updates?.[0]?.body ||
           getColValue('Beskrivelse') ||
           '<p>Ingen detaljert beskrivelse tilgjengelig.</p>';
 
-        // Ekstraherer bilde-URLer direkte fra Monday sine file assets eller JSON value
+        // Hent bilde-URLer
         let imageList: string[] = [];
-        const imageCol = getColObj('Bilder');
+        const imageCol = getColObj('Bilder') || getColObj('Bilde');
 
         if (imageCol) {
-          // 1. Sjekk om GraphQL returnerte direkte file assets/public_url
           if (Array.isArray(imageCol.files)) {
             imageList = imageCol.files
               .map((file: any) => file.public_url || file.url)
               .filter((url: string) => url && url.startsWith('http'));
           }
 
-          // 2. Hvis `files` ikke returnerte lenker, prøv å parse JSON `value`
           if (imageList.length === 0 && imageCol.value) {
             try {
               const parsedVal = JSON.parse(imageCol.value);
@@ -130,12 +135,9 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
                   .map((f: any) => f.url || f.public_url)
                   .filter((url: string) => url && url.startsWith('http'));
               }
-            } catch (e) {
-              // Ignorer parsefeil om verdien er ren tekst
-            }
+            } catch (e) {}
           }
 
-          // 3. Sjekk om det er oppgitt rene URL-er separert med komma i teksten
           if (imageList.length === 0 && imageCol.text) {
             imageList = imageCol.text
               .split(',')
@@ -144,28 +146,27 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           }
         }
 
-        // Bruk den fungerende logoen som trygg fallback hvis produktet mangler bilde i Monday
         if (imageList.length === 0) {
           imageList = ['/EIKLOGO.png'];
         }
 
-        const listPriceStr = getColValue('Veil Pris').replace(/[^0-9]/g, '');
-        const salePriceStr = getColValue('Nettpris').replace(/[^0-9]/g, '');
+        const listPriceStr = getColValue('Veil').replace(/[^0-9]/g, '') || getColValue('Pris').replace(/[^0-9]/g, '');
+        const salePriceStr = getColValue('Nettpris').replace(/[^0-9]/g, '') || listPriceStr;
 
         const listPrice = parseFloat(listPriceStr) || 0;
         const salePrice = parseFloat(salePriceStr) || listPrice;
-        const shippingMethod = getColValue('Fraktmetode');
+        const shippingMethod = getColValue('Frakt');
 
         return {
           id: item.id,
           name: item.name,
-          itemNumber: getColValue('Varenummer') || 'Uten varenr',
+          itemNumber: getColValue('Varenummer') || getColValue('Varenr') || 'Uten varenr',
           category: getColValue('Kategori') || 'Utstyr & Maskiner',
           images: imageList,
           listPrice: listPrice,
           salePrice: salePrice,
           stock: stock,
-          shortInfo: getColValue('Kort Info') || 'Kvalitetsutstyr fra Eiksenteret Sortland.',
+          shortInfo: getColValue('Kort Info') || getColValue('Info') || 'Kvalitetsutstyr fra Eiksenteret Sortland.',
           descriptionHtml: latestUpdateHtml,
           createdAt: item.created_at || new Date().toISOString(),
           pickupOnly:
