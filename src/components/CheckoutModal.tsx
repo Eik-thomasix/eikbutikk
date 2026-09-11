@@ -12,9 +12,10 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product;
+  onSuccess?: () => void;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, onSuccess }: CheckoutModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -32,7 +33,6 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     setErrorMessage('');
 
     try {
-      // Relativ sti sikrer at kallet går til miljøet du befinner deg i (localhost:3000)
       const response = await fetch('/api/vipps/create-payment', {
         method: 'POST',
         headers: {
@@ -57,7 +57,10 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         throw new Error(data.message || 'Kunne ikke starte betalingen med Vipps.');
       }
 
-      // Send kunden videre til Vipps sin betalingsskjerm
+      if (onSuccess) {
+        onSuccess();
+      }
+
       if (data.url) {
         window.location.href = data.url;
       } else {
