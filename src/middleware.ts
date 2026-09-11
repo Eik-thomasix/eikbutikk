@@ -4,33 +4,34 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // 1. Unnta statiske filer, bilder og API-endepunkter fra passordbeskyttelse
+  // 1. Unnta Next.js sin bilde-optimizer, statiske filer, API og bilder
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
+    pathname.startsWith('/images/') ||
     pathname.includes('.') ||
     pathname === '/favicon.ico'
   ) {
     return NextResponse.next();
   }
 
-  // 2. Unnta salgsvilkår (slik at Vipps sine kontrollører kan lese dem fritt)
+  // 2. Unnta salgsvilkår
   if (pathname.startsWith('/vilkar')) {
     return NextResponse.next();
   }
 
-  // 3. Unnta kunder som returnerer direkte fra en fullført Vipps-betaling
+  // 3. Unnta kunder som returnerer fra Vipps
   if (searchParams.has('vipps_order') || searchParams.has('status')) {
     return NextResponse.next();
   }
 
-  // 4. Sjekk om brukeren allerede er innlogget med passord-cookie
+  // 4. Sjekk innloggings-cookie
   const authCookie = request.cookies.get('site_access');
   if (authCookie?.value === 'authenticated') {
     return NextResponse.next();
   }
 
-  // 5. Unnta selve innloggingssiden/passordskjermen
+  // 5. Unnta innloggingssiden
   if (pathname === '/login') {
     return NextResponse.next();
   }
@@ -41,5 +42,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // Pass på at _next/image eksplisitt unntas fra matcher
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
