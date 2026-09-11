@@ -3,12 +3,12 @@ export interface Product {
   name: string;
   itemNumber: string;
   category: string;
-  images: string[]; // Liste med alle bilder
+  images: string[];
   listPrice: number;
   salePrice: number;
   stock: number;
   shortInfo: string;
-  descriptionHtml: string; // Siste Update fra Monday (HTML/Riktekst)
+  descriptionHtml: string;
   createdAt: string;
   pickupOnly: boolean;
   views: number;
@@ -23,7 +23,7 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
     return [];
   }
 
-  // GraphQL-spørring som også henter siste "update"
+  // GraphQL-spørring som henter både tekst, JSON-value og tilknyttede file assets
   const query = `
     query {
       boards (ids: ${boardId}) {
@@ -41,6 +41,16 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
               value
               column {
                 title
+              }
+              ... on FileValue {
+                files {
+                  ... on MondayResource {
+                    public_url
+                  }
+                  ... on Asset {
+                    public_url
+                  }
+                }
               }
             }
           }
@@ -72,12 +82,16 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
 
     const parsedProducts = items
       .map((item: any) => {
-        const getColValue = (title: string) => {
-          const col = item.column_values?.find(
+        const getColObj = (title: string) => {
+          return item.column_values?.find(
             (c: any) =>
               c.column?.title &&
               c.column.title.trim().toLowerCase() === title.trim().toLowerCase()
           );
+        };
+
+        const getColValue = (title: string) => {
+          const col = getColObj(title);
           return col && col.text ? col.text.trim() : '';
         };
 
@@ -90,21 +104,49 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
         }
 
         // Henter siste Update (HTML-tekst) fra Monday
-        const latestUpdateHtml = item.updates?.[0]?.body || getColValue('Beskrivelse') || '<p>Ingen detaljert beskrivelse tilgjengelig.</p>';
+        const latestUpdateHtml =
+          item.updates?.[0]?.body ||
+          getColValue('Beskrivelse') ||
+          '<p>Ingen detaljert beskrivelse tilgjengelig.</p>';
 
-        // Ekstraherer bilde-URLer fra Bilder-kolonnen (eller bruk standardbilde)
-        const rawImages = getColValue('Bilder');
+        // Ekstraherer bilde-URLer direkte fra Monday sine file assets eller JSON value
         let imageList: string[] = [];
+        const imageCol = getColObj('Bilder');
 
-        if (rawImages) {
-          imageList = rawImages
-            .split(',')
-            .map((url: string) => url.trim())
-            .filter((url: string) => url.startsWith('http'));
+        if (imageCol) {
+          // 1. Sjekk om GraphQL returnerte direkte file assets/public_url
+          if (Array.isArray(imageCol.files)) {
+            imageList = imageCol.files
+              .map((file: any) => file.public_url || file.url)
+              .filter((url: string) => url && url.startsWith('http'));
+          }
+
+          // 2. Hvis `files` ikke returnerte lenker, prøv å parse JSON `value`
+          if (imageList.length === 0 && imageCol.value) {
+            try {
+              const parsedVal = JSON.parse(imageCol.value);
+              if (parsedVal.files && Array.isArray(parsedVal.files)) {
+                imageList = parsedVal.files
+                  .map((f: any) => f.url || f.public_url)
+                  .filter((url: string) => url && url.startsWith('http'));
+              }
+            } catch (e) {
+              // Ignorer parsefeil om verdien er ren tekst
+            }
+          }
+
+          // 3. Sjekk om det er oppgitt rene URL-er separert med komma i teksten
+          if (imageList.length === 0 && imageCol.text) {
+            imageList = imageCol.text
+              .split(',')
+              .map((url: string) => url.trim())
+              .filter((url: string) => url.startsWith('http'));
+          }
         }
 
+        // Bruk den fungerende logoen som trygg fallback hvis produktet mangler bilde i Monday
         if (imageList.length === 0) {
-          imageList = ['https://images.unsplash.com/photo-1592417817098-8f3d6eb16082?auto=format&fit=crop&w=800&q=80'];
+          imageList = ['/EIKLOGO.png'];
         }
 
         const listPriceStr = getColValue('Veil Pris').replace(/[^0-9]/g, '');
@@ -136,7 +178,6 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
       .filter(Boolean) as Product[];
 
     return parsedProducts;
-
   } catch (error) {
     console.error('❌ Kritisk feil ved henting fra Monday:', error);
     return [];
