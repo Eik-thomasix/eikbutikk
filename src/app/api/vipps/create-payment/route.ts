@@ -31,14 +31,7 @@ interface CheckoutProduct {
   salePrice: number;
   itemNumber?: string;
   stock?: number;
-  category?: string;
   pickupOnly?: boolean;
-  images?: string[];
-  listPrice?: number;
-  shortInfo?: string;
-  descriptionHtml?: string;
-  createdAt?: string;
-  views?: number;
 }
 
 interface CheckoutCustomer {
@@ -144,13 +137,40 @@ async function createMondayOrder(params: {
     customer.deliveryMethod ||
     (product.pickupOnly ? 'Henting i butikk' : 'Postsending');
 
+  // Bevisst kompakt ordredata. Bilder, HTML-beskrivelse og andre store
+  // produktfelt lagres ikke her, slik at JSON-en holder seg under Monday-grensen.
   const storedOrderData = {
     orderId,
-    product,
-    customer: { ...customer, deliveryMethod },
+    product: {
+      id: product.id,
+      name: product.name,
+      itemNumber: product.itemNumber || 'Uten varenummer',
+      salePrice: Number(product.salePrice),
+      stock:
+        typeof product.stock === 'number'
+          ? product.stock
+          : 1,
+    },
+    customer: {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      address: customer.address,
+      postalCode: customer.postalCode,
+      city: customer.city,
+      deliveryMethod,
+    },
     createdAt: new Date().toISOString(),
     processed: false,
   };
+
+  const productJson = JSON.stringify(storedOrderData);
+
+  if (productJson.length > 1900) {
+    throw new Error(
+      `Ordredata er for stor for Produkt JSON (${productJson.length} tegn).`
+    );
+  }
 
   const columnValues = {
     [ORDER_COLUMNS.productId]: product.id,
@@ -173,10 +193,11 @@ async function createMondayOrder(params: {
     [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
     [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
     [ORDER_COLUMNS.createdDate]: { date: getNorwegianDate() },
-    [ORDER_COLUMNS.itemNumber]: product.itemNumber || 'Uten varenummer',
+    [ORDER_COLUMNS.itemNumber]:
+      product.itemNumber || 'Uten varenummer',
     [ORDER_COLUMNS.vippsOrderId]: orderId,
     [ORDER_COLUMNS.stockUpdated]: { checked: 'false' },
-    [ORDER_COLUMNS.productJson]: JSON.stringify(storedOrderData),
+    [ORDER_COLUMNS.productJson]: productJson,
   };
 
   const itemName = `${orderId} - ${customer.name}`.slice(0, 255);
@@ -207,7 +228,9 @@ async function createMondayOrder(params: {
     columnValues: JSON.stringify(columnValues),
   });
 
-  const createdOrder = data?.data?.create_item as MondayOrderResult | undefined;
+  const createdOrder = data?.data?.create_item as
+    | MondayOrderResult
+    | undefined;
 
   if (!createdOrder?.id) {
     throw new Error('Monday opprettet ikke ordren som forventet.');
@@ -217,6 +240,7 @@ async function createMondayOrder(params: {
     mondayItemId: createdOrder.id,
     orderId,
     itemName: createdOrder.name,
+    productJsonLength: productJson.length,
   });
 
   return createdOrder;
@@ -305,8 +329,15 @@ export async function POST(request: Request) {
     }
 
     const normalizedProduct: CheckoutProduct = {
-      ...product,
+      id: product.id,
+      name: product.name,
       salePrice: Number(product.salePrice),
+      itemNumber: product.itemNumber,
+      stock:
+        typeof product.stock === 'number'
+          ? product.stock
+          : 1,
+      pickupOnly: Boolean(product.pickupOnly),
     };
 
     const orderId = `EIK-${Date.now().toString().slice(-8)}`;

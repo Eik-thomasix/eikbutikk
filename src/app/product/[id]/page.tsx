@@ -1,47 +1,200 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ShoppingBag, ArrowLeft, MapPin, Award, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import {
+  ShoppingBag,
+  ArrowLeft,
+  MapPin,
+  Award,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import { Product } from '@/lib/monday';
 import CheckoutModal from '@/components/CheckoutModal';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const completionStarted = useRef(false);
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [showCheckout, setShowCheckout] = useState(false);
+  const [completingPayment, setCompletingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
+  const rawProductId = params?.id;
+  const productId = Array.isArray(rawProductId)
+    ? rawProductId[0]
+    : rawProductId;
+  const vippsOrder = searchParams.get('vipps_order');
 
   useEffect(() => {
     async function loadProduct() {
       try {
-        const res = await fetch('/api/products');
+        const res = await fetch('/api/products', {
+          cache: 'no-store',
+        });
         const data = await res.json();
-        const found = (data.products || []).find((p: Product) => p.id === params.id);
-        
+
+        if (!res.ok) {
+          throw new Error(
+            data?.message || 'Kunne ikke hente produktet.'
+          );
+        }
+
+        const found = (data.products || []).find(
+          (candidate: Product) => candidate.id === productId
+        );
+
         if (found) {
           setProduct(found);
-          const initialImage = (found.images && found.images.length > 0) 
-            ? found.images[0] 
-            : '/honda.png';
+          const initialImage =
+            found.images && found.images.length > 0
+              ? found.images[0]
+              : '/honda.png';
           setSelectedImage(initialImage);
         }
-      } catch (err) {
-        console.error('Feil ved henting av produkt:', err);
+      } catch (error) {
+        console.error('Feil ved henting av produkt:', error);
       } finally {
         setLoading(false);
       }
     }
+
     loadProduct();
-  }, [params.id]);
+  }, [productId]);
+
+  useEffect(() => {
+    if (!vippsOrder || completionStarted.current) {
+      return;
+    }
+
+    completionStarted.current = true;
+    setCompletingPayment(true);
+    setPaymentError('');
+
+    async function completePayment() {
+      try {
+        const response = await fetch(
+          '/api/vipps/complete-payment',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              reference: vippsOrder,
+            }),
+            cache: 'no-store',
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data?.message ||
+              'Betalingen kunne ikke ferdigbehandles.'
+          );
+        }
+
+        const redirectUrl =
+          data.redirect ||
+          `/ordre-bekreftet?ordrenr=${encodeURIComponent(
+            vippsOrder
+          )}`;
+
+        router.replace(redirectUrl);
+      } catch (error) {
+        console.error(
+          'Feil ved ferdigbehandling av betaling:',
+          error
+        );
+
+        setPaymentError(
+          error instanceof Error
+            ? error.message
+            : 'Det oppstod en feil ved kontroll av betalingen.'
+        );
+        setCompletingPayment(false);
+      }
+    }
+
+    completePayment();
+  }, [router, vippsOrder]);
+
+  const retryPaymentCompletion = () => {
+    completionStarted.current = false;
+    setPaymentError('');
+    setCompletingPayment(false);
+
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 50);
+  };
+
+  if (completingPayment) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-red-600 mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Kontrollerer betalingen
+        </h1>
+        <p className="max-w-md text-sm text-gray-600">
+          Vi bekrefter betalingen hos Vipps og registrerer ordren.
+          Ikke lukk denne siden.
+        </p>
+      </div>
+    );
+  }
+
+  if (paymentError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg rounded-2xl border border-red-200 bg-white p-8 text-center shadow-lg">
+          <AlertCircle className="mx-auto mb-4 h-14 w-14 text-red-600" />
+          <h1 className="mb-3 text-2xl font-bold text-gray-900">
+            Vi kunne ikke ferdigbehandle ordren
+          </h1>
+          <p className="mb-2 text-sm text-gray-600">
+            {paymentError}
+          </p>
+          <p className="mb-6 text-xs text-gray-500">
+            Ikke gjennomfør en ny betaling før statusen er kontrollert.
+            Ordrenummer: {vippsOrder}
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={retryPaymentCompletion}
+              className="rounded-xl bg-red-600 px-5 py-3 font-semibold text-white hover:bg-red-700"
+            >
+              Prøv kontrollen på nytt
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Til forsiden
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-red-600 mb-2" />
-        <p className="text-sm text-gray-500">Laster produktdetaljer...</p>
+        <p className="text-sm text-gray-500">
+          Laster produktdetaljer...
+        </p>
       </div>
     );
   }
@@ -49,7 +202,9 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Produktet ble ikke funnet</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          Produktet ble ikke funnet
+        </h2>
         <button
           onClick={() => router.push('/')}
           className="bg-neutral-900 text-white px-4 py-2 rounded-lg text-sm font-semibold"
@@ -60,49 +215,61 @@ export default function ProductDetailPage() {
     );
   }
 
-  const productImages = (product.images && product.images.length > 0) 
-    ? product.images 
-    : ['/honda.png'];
+  const productImages =
+    product.images && product.images.length > 0
+      ? product.images
+      : ['/honda.png'];
 
   const discount =
     product.listPrice > product.salePrice
-      ? Math.round(((product.listPrice - product.salePrice) / product.listPrice) * 100)
+      ? Math.round(
+          ((product.listPrice - product.salePrice) /
+            product.listPrice) *
+            100
+        )
       : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header Navigation med Logo */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
             className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-600 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Tilbake til alle tilbud
+            <ArrowLeft className="w-4 h-4" />
+            Tilbake til alle tilbud
           </button>
 
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-            <img src="/EIKLOGO.png" alt="Eiksenteret Logo" className="h-9 object-contain" />
-            <span className="font-bold text-gray-900 text-base hidden sm:inline">Eikbutikk.no</span>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => router.push('/')}
+          >
+            <img
+              src="/EIKLOGO.png"
+              alt="Eiksenteret Logo"
+              className="h-9 object-contain"
+            />
+            <span className="font-bold text-gray-900 text-base hidden sm:inline">
+              Eikbutikk.no
+            </span>
           </div>
         </div>
       </header>
 
-      {/* Hovedinnhold */}
       <main className="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* VENSTRE: Bildegalleri */}
           <div className="lg:col-span-7 flex flex-col gap-4">
             <div className="w-full h-96 md:h-[480px] bg-gray-50 rounded-xl overflow-hidden relative border border-gray-100 p-4 flex items-center justify-center">
               <img
                 src={selectedImage || productImages[0]}
                 alt={product.name}
                 className="max-h-full max-w-full object-contain transition-all duration-300"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/honda.png';
+                onError={(event) => {
+                  event.currentTarget.src = '/honda.png';
                 }}
               />
+
               {discount > 0 && (
                 <span className="absolute top-4 left-4 bg-red-600 text-white font-extrabold text-sm px-3 py-1 rounded-md shadow">
                   -{discount}% TILBUD
@@ -114,19 +281,21 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-3 overflow-x-auto pb-2">
                 {productImages.map((imgUrl, index) => (
                   <button
-                    key={index}
+                    key={`${imgUrl}-${index}`}
                     onClick={() => setSelectedImage(imgUrl)}
                     className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 p-1 bg-gray-50 flex items-center justify-center ${
-                      selectedImage === imgUrl ? 'border-red-600 scale-105 shadow' : 'border-gray-200 opacity-70 hover:opacity-100'
+                      selectedImage === imgUrl
+                        ? 'border-red-600 scale-105 shadow'
+                        : 'border-gray-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img 
-                      src={imgUrl} 
-                      alt={`Bilde ${index + 1}`} 
+                    <img
+                      src={imgUrl}
+                      alt={`Bilde ${index + 1}`}
                       className="max-h-full max-w-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/honda.png';
-                      }} 
+                      onError={(event) => {
+                        event.currentTarget.src = '/honda.png';
+                      }}
                     />
                   </button>
                 ))}
@@ -134,12 +303,13 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* HØYRE: Produktdetaljer & Kjøp */}
           <div className="lg:col-span-5 flex flex-col justify-between">
             <div>
               <div className="text-xs font-semibold text-gray-400 mb-2">
-                Varenr: {product.itemNumber} | Kategori: {product.category}
+                Varenr: {product.itemNumber} | Kategori:{' '}
+                {product.category}
               </div>
+
               <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">
                 {product.name}
               </h1>
@@ -152,7 +322,9 @@ export default function ProductDetailPage() {
                 <div className="mb-6 text-xs bg-amber-50 text-amber-800 p-3 rounded-xl border border-amber-200 font-medium flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-amber-600 flex-shrink-0" />
                   <div>
-                    <span className="font-bold block">Kun henting i butikk</span>
+                    <span className="font-bold block">
+                      Kun henting i butikk
+                    </span>
                     <span>Verkstedveien 2, 8402 Sortland</span>
                   </div>
                 </div>
@@ -160,14 +332,20 @@ export default function ProductDetailPage() {
                 <div className="mb-6 text-xs bg-blue-50 text-blue-800 p-3 rounded-xl border border-blue-200 font-medium flex items-center gap-2">
                   <Award className="w-4 h-4 text-blue-600 flex-shrink-0" />
                   <div>
-                    <span className="font-bold block">Henting eller Postpakke</span>
-                    <span>Kan sendes per post eller hentes i butikken.</span>
+                    <span className="font-bold block">
+                      Henting eller Postpakke
+                    </span>
+                    <span>
+                      Kan sendes per post eller hentes i butikken.
+                    </span>
                   </div>
                 </div>
               )}
 
               <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 mb-6">
-                <div className="text-xs text-gray-500 mb-1 font-semibold uppercase">Tilbudspris på nett</div>
+                <div className="text-xs text-gray-500 mb-1 font-semibold uppercase">
+                  Tilbudspris på nett
+                </div>
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl md:text-4xl font-extrabold text-red-600">
                     {product.salePrice.toLocaleString('no-NO')} kr
@@ -183,22 +361,27 @@ export default function ProductDetailPage() {
 
             <button
               onClick={() => setShowCheckout(true)}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-lg shadow-md hover:shadow-lg"
+              disabled={product.stock <= 0}
+              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-lg shadow-md hover:shadow-lg"
             >
-              <ShoppingBag className="w-5 h-5" /> Kjøp med Vipps nå
+              <ShoppingBag className="w-5 h-5" />
+              {product.stock > 0
+                ? 'Kjøp med Vipps nå'
+                : 'Utsolgt'}
             </button>
           </div>
         </div>
 
-        {/* Beskrivelse fra Monday AI */}
         <div className="mt-8 bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm">
           <h3 className="text-xl font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">
             Produktinformasjon & Spesifikasjoner
           </h3>
-          
+
           <div
             className="prose prose-red max-w-none text-gray-700 text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+            dangerouslySetInnerHTML={{
+              __html: product.descriptionHtml,
+            }}
           />
         </div>
       </main>
@@ -209,7 +392,6 @@ export default function ProductDetailPage() {
           onClose={() => setShowCheckout(false)}
           onSuccess={() => {
             setShowCheckout(false);
-            router.push('/');
           }}
         />
       )}
