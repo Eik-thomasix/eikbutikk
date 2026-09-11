@@ -23,7 +23,11 @@ export default function ProductDetailPage() {
         
         if (found) {
           setProduct(found);
-          setSelectedImage(found.images[0]);
+          // Sjekker at bilder finnes og at matrisen ikke er tom
+          const initialImage = (found.images && found.images.length > 0) 
+            ? found.images[0] 
+            : (found.imageUrl || '/honda.png');
+          setSelectedImage(initialImage);
         }
       } catch (err) {
         console.error('Feil ved henting av produkt:', err);
@@ -57,6 +61,10 @@ export default function ProductDetailPage() {
     );
   }
 
+  const productImages = (product.images && product.images.length > 0) 
+    ? product.images 
+    : [product.imageUrl || '/honda.png'];
+
   const discount =
     product.listPrice > product.salePrice
       ? Math.round(((product.listPrice - product.salePrice) / product.listPrice) * 100)
@@ -89,9 +97,13 @@ export default function ProductDetailPage() {
           <div className="lg:col-span-7 flex flex-col gap-4">
             <div className="w-full h-96 md:h-[480px] bg-gray-50 rounded-xl overflow-hidden relative border border-gray-100 p-4 flex items-center justify-center">
               <img
-                src={selectedImage || product.images[0]}
+                src={selectedImage || productImages[0]}
                 alt={product.name}
                 className="max-h-full max-w-full object-contain transition-all duration-300"
+                onError={(e) => {
+                  // Fallback om bildet feiler ved lasting
+                  (e.target as HTMLImageElement).src = '/honda.png';
+                }}
               />
               {discount > 0 && (
                 <span className="absolute top-4 left-4 bg-red-600 text-white font-extrabold text-sm px-3 py-1 rounded-md shadow">
@@ -100,9 +112,9 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {product.images.length > 1 && (
+            {productImages.length > 1 && (
               <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                {product.images.map((imgUrl, index) => (
+                {productImages.map((imgUrl, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(imgUrl)}
@@ -110,7 +122,14 @@ export default function ProductDetailPage() {
                       selectedImage === imgUrl ? 'border-red-600 scale-105 shadow' : 'border-gray-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={imgUrl} alt={`Bilde ${index + 1}`} className="max-h-full max-w-full object-contain" />
+                    <img 
+                      src={imgUrl} 
+                      alt={`Bilde ${index + 1}`} 
+                      className="max-h-full max-w-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/honda.png';
+                      }} 
+                    />
                   </button>
                 ))}
               </div>
