@@ -9,13 +9,18 @@ interface Product {
 }
 
 interface CheckoutModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   product: Product;
   onSuccess?: () => void;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product, onSuccess }: CheckoutModalProps) {
+export default function CheckoutModal({ 
+  isOpen = true, 
+  onClose, 
+  product, 
+  onSuccess 
+}: CheckoutModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -58,7 +63,7 @@ export default function CheckoutModal({ isOpen, onClose, product, onSuccess }: C
       }
 
       if (onSuccess) {
-        onSuccess();
+        await onSuccess();
       }
 
       if (data.url) {
