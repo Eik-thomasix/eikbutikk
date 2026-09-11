@@ -1,11 +1,33 @@
-import React from 'react';
-import { ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX } from 'lucide-react';
-import { fetchProductsFromMonday, Product } from '@/lib/monday';
+'use client';
 
-export const revalidate = 30; // Server-side oppdatering hvert 30. sekund
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX, Loader2 } from 'lucide-react';
+import { Product } from '@/lib/monday';
+import CheckoutModal from '@/components/CheckoutModal';
 
-export default async function HomePage() {
-  const products = await fetchProductsFromMonday();
+export default function HomePage() {
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch (err) {
+      console.error('Feil ved henting av produkter:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const isNewItem = (dateString: string) => {
     const itemDate = new Date(dateString);
@@ -21,8 +43,8 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Topplinje med kontaktinfo og Butikkadresse */}
-      <header className="bg-neutral-900 text-white text-sm py-2 px-4">
+      {/* Topplinje */}
+      <header className="bg-neutral-900 text-white text-sm py-2 px-4 z-50">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1">
@@ -44,16 +66,18 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* Hovedmeny / Branding */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-red-600 text-white font-extrabold text-2xl px-3 py-1 rounded tracking-wider">
-              EIK
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-gray-900">Eikbutikk.no</h1>
-              <p className="text-xs text-gray-500">Kupp & tilbudsvarer fra Eiksenteret Sortland</p>
+      {/* Hovedmeny */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push('/')}>
+            <img
+              src="/EIKLOGO.png"
+              alt="Eiksenteret Sortland Logo"
+              className="h-10 md:h-12 object-contain"
+            />
+            <div className="border-l border-gray-300 pl-4">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight text-gray-900 leading-none">Eikbutikk.no</h1>
+              <p className="text-xs text-gray-500 mt-1">Gode kjøp og tilbud fra Eiksenteret Sortland</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -65,14 +89,26 @@ export default async function HomePage() {
       </nav>
 
       {/* Hero-seksjon */}
-      <section className="bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto text-center md:text-left">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-3">
-            Gjør et kupp på maskiner og utstyr
-          </h2>
-          <p className="text-gray-300 max-w-2xl text-base md:text-lg">
-            Her legger våre fagfolk ut utstillingsmodeller, overskuddsvarer og spesiell-tilbud direkte fra butikken i Verkstedveien.
-          </p>
+      <section className="max-w-7xl mx-auto px-4 pt-4 pb-2 w-full">
+        <div className="relative rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-neutral-900">
+          <img
+            src="/EiksenteretSortland.png"
+            alt="Eiksenteret Sortland Butikk"
+            className="w-full h-auto max-h-[280px] object-contain bg-neutral-900"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent flex items-center p-6 md:p-10">
+            <div className="max-w-xl text-white">
+              <span className="inline-block bg-red-600 text-white font-bold text-xs uppercase tracking-widest px-3 py-1 rounded mb-2">
+                Velkommen til Eikbutikk.no
+              </span>
+              <h2 className="text-xl md:text-3xl font-extrabold mb-2 tracking-tight text-white">
+                Utvalgte kvalitetsprodukter og gode tilbud
+              </h2>
+              <p className="text-gray-200 text-xs md:text-sm leading-relaxed hidden sm:block">
+                Her publiserer våre fagfolk utstillingsmodeller, overskuddsvarer og spesiell-tilbud direkte fra vårt lager og butikk i Verkstedveien 2 på Sortland.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -80,19 +116,24 @@ export default async function HomePage() {
       <main className="max-w-7xl mx-auto px-4 py-10 flex-grow w-full">
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            Aktuelle Kupp & Tilbud
+            Aktuelle tilbud
           </h3>
           <span className="text-sm text-gray-500">
             {products.length} varer tilgjengelig nå
           </span>
         </div>
 
-        {products.length === 0 ? (
+        {loading ? (
+          <div className="py-20 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+            <p className="text-sm">Laster inn tilbud...</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center border border-gray-200 max-w-lg mx-auto">
             <PackageX className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <h4 className="text-lg font-bold text-gray-800 mb-1">Ingen aktive varer ennå</h4>
             <p className="text-sm text-gray-500">
-              Legg til et produkt i Monday.com og sett statusen til <strong className="text-gray-700">Aktiv</strong> for å vise det her.
+              Når en vare blir utsolgt eller ny lagres i Monday, oppdateres listen automatisk.
             </p>
           </div>
         ) : (
@@ -106,11 +147,10 @@ export default async function HomePage() {
                   key={product.id}
                   className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden flex flex-col relative"
                 >
-                  {/* Badges */}
                   <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
                     {discount > 0 && (
                       <span className="bg-red-600 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-sm">
-                        -{discount}% RABATT
+                        -{discount}% TILBUD
                       </span>
                     )}
                     {isNew && (
@@ -120,31 +160,40 @@ export default async function HomePage() {
                     )}
                   </div>
 
-                  {/* Produktbilde */}
-                  <div className="h-56 bg-gray-100 relative overflow-hidden group">
+                  <div
+                    onClick={() => router.push(`/product/${product.id}`)}
+                    className="h-64 bg-gray-50 p-6 flex items-center justify-center relative overflow-hidden group cursor-pointer border-b border-gray-100"
+                  >
                     <img
-                      src={product.imageUrl}
+                      src={
+                        product.images && product.images.length > 0
+                          ? product.images[0]
+                          : 'https://images.unsplash.com/photo-1592417817098-8f3d6eb16082?auto=format&fit=crop&w=600&q=80'
+                      }
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
 
-                  {/* Produktinnhold */}
                   <div className="p-5 flex-grow flex flex-col justify-between">
                     <div>
                       <div className="text-xs text-gray-400 font-medium mb-1">
                         Varenr: {product.itemNumber} | {product.category}
                       </div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
+
+                      <h4
+                        onClick={() => router.push(`/product/${product.id}`)}
+                        className="text-lg font-bold text-gray-900 mb-2 line-clamp-1 cursor-pointer hover:text-red-600 transition-colors"
+                      >
                         {product.name}
                       </h4>
+
                       <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                         {product.shortInfo}
                       </p>
                     </div>
 
                     <div>
-                      {/* Fraktinfo */}
                       {product.pickupOnly ? (
                         <div className="mb-3 text-xs bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5" /> Må hentes i butikk på Sortland
@@ -155,7 +204,6 @@ export default async function HomePage() {
                         </div>
                       )}
 
-                      {/* Priser */}
                       <div className="flex items-baseline gap-2 mb-4">
                         <span className="text-2xl font-extrabold text-red-600">
                           {product.salePrice.toLocaleString('no-NO')} kr
@@ -167,7 +215,10 @@ export default async function HomePage() {
                         )}
                       </div>
 
-                      <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setSelectedProduct(product)}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      >
                         <ShoppingBag className="w-4 h-4" /> Kjøp med Vipps
                       </button>
                     </div>
@@ -179,11 +230,22 @@ export default async function HomePage() {
         )}
       </main>
 
-      {/* Bunntekst / Footer */}
-      <footer className="bg-neutral-900 text-gray-400 text-sm py-10 border-t border-neutral-800 mt-12">
+      {selectedProduct && (
+        <CheckoutModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onSuccess={loadProducts}
+        />
+      )}
+
+      {/* Footer med Forbehold */}
+      <footer className="bg-neutral-900 text-gray-400 text-sm py-12 border-t border-neutral-800 mt-12">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h5 className="text-white font-bold mb-3 text-base">Eiksenteret Sortland</h5>
+            <div className="inline-block bg-white p-2 rounded-lg mb-4">
+              <img src="/EIKLOGO.png" alt="Eiksenteret Logo" className="h-8 object-contain" />
+            </div>
+            <p className="mb-1 text-white font-semibold">Eiksenteret Sortland</p>
             <p className="mb-1">Verkstedveien 2, 8402 Sortland</p>
             <p className="mb-1">Telefon: 76 12 13 60</p>
             <p>E-post: sortland@eiksenteret.no</p>
@@ -195,9 +257,12 @@ export default async function HomePage() {
             </p>
           </div>
           <div>
-            <h5 className="text-white font-bold mb-3 text-base">Betaling & Betingelser</h5>
-            <p className="text-xs leading-relaxed">
-              Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt blir klargjort for enten henting i butikk eller sending.
+            <h5 className="text-white font-bold mb-3 text-base">Betaling & Forbehold</h5>
+            <p className="text-xs leading-relaxed mb-2">
+              Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt blir klargjort for enten henting i butikk i Verkstedveien 2 eller sending per post.
+            </p>
+            <p className="text-[11px] text-gray-500 leading-relaxed italic border-t border-neutral-800 pt-2">
+              <strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilprising, spesifikasjonsendringer og at varer kan være utsolgt (mellomdagssalg i butikk).
             </p>
           </div>
         </div>
