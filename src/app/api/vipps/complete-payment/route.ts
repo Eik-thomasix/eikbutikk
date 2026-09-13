@@ -442,7 +442,7 @@ export async function POST(request: NextRequest) {
     const capturedAmount = Number(
       payment?.aggregate?.capturedAmount?.value || 0
     );
-    const expectedAmount = Math.round(Number(storedOrder.product.salePrice) * 100);
+    const expectedAmount = Math.round(Number(storedOrder.product.totalPrice ??(Number(storedOrder.product.salePrice) + Number(storedOrder.product.shippingPrice || 0))) * 100);
     const confirmedAmount = Math.max(authorizedAmount, capturedAmount);
 
     if (confirmedAmount !== expectedAmount) {
