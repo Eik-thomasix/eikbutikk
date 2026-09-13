@@ -9,6 +9,9 @@ import {
   Award,
   Loader2,
   AlertCircle,
+  ShieldCheck,
+  Truck,
+  CheckCircle2,
 } from 'lucide-react';
 import { Product } from '@/lib/monday';
 import CheckoutModal from '@/components/CheckoutModal';
@@ -295,6 +298,11 @@ export default function ProductDetailPage() {
             100
         )
       : 0;
+  const savings = Math.max(
+    0,
+    product.listPrice - product.salePrice
+  );
+  const isOutOfStock = product.stock <= 0;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -339,7 +347,7 @@ export default function ProductDetailPage() {
 
               {discount > 0 && (
                 <span className="absolute top-4 left-4 bg-red-600 text-white font-extrabold text-sm px-3 py-1 rounded-md shadow">
-                  -{discount}% TILBUD
+                  SPAR {discount} %
                 </span>
               )}
             </div>
@@ -409,11 +417,11 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 mb-6">
-                <div className="text-xs text-gray-500 mb-1 font-semibold uppercase">
+              <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 mb-5">
+                <div className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wide">
                   Tilbudspris på nett
                 </div>
-                <div className="flex items-baseline gap-3">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="text-3xl md:text-4xl font-extrabold text-red-600">
                     {product.salePrice.toLocaleString('no-NO')} kr
                   </span>
@@ -422,6 +430,38 @@ export default function ProductDetailPage() {
                       {product.listPrice.toLocaleString('no-NO')} kr
                     </span>
                   )}
+                </div>
+                {savings > 0 && (
+                  <div className="mt-2 inline-flex rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700">
+                    Du sparer {savings.toLocaleString('no-NO')} kr
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-5 grid gap-2 text-sm text-gray-700 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
+                  <ShieldCheck className="h-4 w-4 flex-shrink-0 text-green-700" />
+                  <span className="font-semibold">Trygg betaling med Vipps</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                  <Truck className="h-4 w-4 flex-shrink-0 text-blue-700" />
+                  <span className="font-semibold">
+                    {product.pickupOnly
+                      ? 'Hentes på Sortland'
+                      : 'Frakt beregnes i kassen'}
+                  </span>
+                </div>
+                <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
+                  isOutOfStock
+                    ? 'border-red-200 bg-red-50 text-red-700'
+                    : 'border-green-200 bg-green-50 text-green-700'
+                }`}>
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-semibold">
+                    {isOutOfStock
+                      ? 'Utsolgt'
+                      : `${product.stock} stk på lager`}
+                  </span>
                 </div>
               </div>
             </div>

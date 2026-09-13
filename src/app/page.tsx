@@ -118,7 +118,7 @@ function ProductCard({
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
         {discount > 0 && (
           <span className="bg-red-600 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-sm">
-            -{discount}% TILBUD
+            SPAR {discount} %
           </span>
         )}
         {isNew && (
@@ -379,8 +379,8 @@ export default function HomePage() {
                 Utvalgte kvalitetsprodukter og gode tilbud
               </h2>
               <p className="text-gray-200 text-xs md:text-sm leading-relaxed hidden sm:block">
-                Her publiserer våre fagfolk utstillingsmodeller,
-                overskuddsvarer og spesialtilbud direkte fra lageret
+                Her finner du gode tilbud, utstillingsmodeller,
+                overskuddsvarer og spesialkjøp direkte fra lageret
                 og butikken vår i Verkstedveien 2 på Sortland.
               </p>
             </div>
