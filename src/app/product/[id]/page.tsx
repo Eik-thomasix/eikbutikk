@@ -13,11 +13,21 @@ import {
 import { Product } from '@/lib/monday';
 import CheckoutModal from '@/components/CheckoutModal';
 
+function getLocalDateKey(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const completionStarted = useRef(false);
+  const productViewStarted = useRef(false);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,17 +40,17 @@ export default function ProductDetailPage() {
   const productId = Array.isArray(rawProductId)
     ? rawProductId[0]
     : rawProductId;
-  const vippsOrder = 
-  searchParams.get('vipps_order') || '';
+  const vippsOrder = searchParams.get('vipps_order') || '';
+
   useEffect(() => {
     async function loadProduct() {
       try {
-        const res = await fetch('/api/products', {
+        const response = await fetch('/api/products', {
           cache: 'no-store',
         });
-        const data = await res.json();
+        const data = await response.json();
 
-        if (!res.ok) {
+        if (!response.ok) {
           throw new Error(
             data?.message || 'Kunne ikke hente produktet.'
           );
@@ -66,6 +76,63 @@ export default function ProductDetailPage() {
     }
 
     loadProduct();
+  }, [productId]);
+
+  useEffect(() => {
+    if (!productId || productViewStarted.current) {
+      return;
+    }
+
+    const storageKey =
+      `eikbutikk:product-view:${productId}:${getLocalDateKey()}`;
+
+    try {
+      if (window.localStorage.getItem(storageKey)) {
+        return;
+      }
+    } catch (error) {
+      console.warn('Kunne ikke lese visningsstatus lokalt:', error);
+    }
+
+    productViewStarted.current = true;
+
+    async function registerProductView() {
+      try {
+        const response = await fetch('/api/products/view', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productId,
+            type: 'product',
+          }),
+          keepalive: true,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data?.message || 'Kunne ikke registrere produktvisning.'
+          );
+        }
+
+        try {
+          window.localStorage.setItem(storageKey, 'registered');
+        } catch (error) {
+          console.warn('Kunne ikke lagre visningsstatus lokalt:', error);
+        }
+      } catch (error) {
+        productViewStarted.current = false;
+        console.error(
+          `Kunne ikke registrere produktvisning for ${productId}:`,
+          error
+        );
+      }
+    }
+
+    void registerProductView();
   }, [productId]);
 
   useEffect(() => {
@@ -124,7 +191,7 @@ export default function ProductDetailPage() {
       }
     }
 
-    completePayment();
+    void completePayment();
   }, [router, vippsOrder]);
 
   const retryPaymentCompletion = () => {
