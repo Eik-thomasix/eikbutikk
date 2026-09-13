@@ -1,6 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ShoppingBag,
@@ -26,11 +31,197 @@ type StockInfo = {
   icon: React.ReactNode;
 };
 
+type ProductCardProps = {
+  product: Product;
+  onOpenProduct: (productId: string) => void;
+  onBuyProduct: (product: Product) => void;
+  calculateDiscount: (listPrice: number, salePrice: number) => number;
+  isNewItem: (dateString: string) => boolean;
+  getStockInfo: (stock: number) => StockInfo;
+};
+
+function ProductCard({
+  product,
+  onOpenProduct,
+  onBuyProduct,
+  calculateDiscount,
+  isNewItem,
+  getStockInfo,
+}: ProductCardProps) {
+  const cardRef = useRef<HTMLElement | null>(null);
+  const viewRegistered = useRef(false);
+
+  useEffect(() => {
+    const card = cardRef.current;
+
+    if (!card || viewRegistered.current) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting || viewRegistered.current) {
+          return;
+        }
+
+        viewRegistered.current = true;
+        observer.disconnect();
+
+        void fetch('/api/products/view', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productId: product.id,
+            type: 'home',
+          }),
+          keepalive: true,
+        }).catch((error) => {
+          console.error(
+            `Kunne ikke registrere forsidevisning for ${product.id}:`,
+            error
+          );
+        });
+      },
+      {
+        threshold: 0.5,
+      }
+    );
+
+    observer.observe(card);
+
+    return () => observer.disconnect();
+  }, [product.id]);
+
+  const discount = calculateDiscount(
+    product.listPrice,
+    product.salePrice
+  );
+  const isNew = isNewItem(product.createdAt);
+  const stock = Number.isFinite(product.stock)
+    ? product.stock
+    : 0;
+  const stockInfo = getStockInfo(stock);
+  const isOutOfStock = stock <= 0;
+
+  return (
+    <article
+      ref={cardRef}
+      data-product-id={product.id}
+      className={`bg-white rounded-xl shadow-sm transition-all border overflow-hidden flex flex-col relative ${
+        isOutOfStock
+          ? 'border-gray-300 opacity-80'
+          : 'border-gray-200 hover:shadow-md'
+      }`}
+    >
+      <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+        {discount > 0 && (
+          <span className="bg-red-600 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-sm">
+            -{discount}% TILBUD
+          </span>
+        )}
+        {isNew && (
+          <span className="bg-emerald-600 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            NY SISTE 3 DAGER
+          </span>
+        )}
+      </div>
+
+      <div
+        onClick={() => onOpenProduct(product.id)}
+        className="h-64 bg-gray-50 p-6 flex items-center justify-center relative overflow-hidden group cursor-pointer border-b border-gray-100"
+      >
+        <img
+          src={
+            product.images && product.images.length > 0
+              ? product.images[0]
+              : '/EIKLOGO.png'
+          }
+          alt={product.name}
+          className={`max-h-full max-w-full object-contain transition-transform duration-300 ${
+            isOutOfStock
+              ? 'grayscale'
+              : 'group-hover:scale-105'
+          }`}
+          onError={(event) => {
+            event.currentTarget.src = '/EIKLOGO.png';
+          }}
+        />
+      </div>
+
+      <div className="p-5 flex-grow flex flex-col justify-between">
+        <div>
+          <div className="text-xs text-gray-400 font-medium mb-1">
+            Varenr: {product.itemNumber} | {product.category}
+          </div>
+
+          <h4
+            onClick={() => onOpenProduct(product.id)}
+            className="text-lg font-bold text-gray-900 mb-2 line-clamp-1 cursor-pointer hover:text-red-600 transition-colors"
+          >
+            {product.name}
+          </h4>
+
+          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+            {product.shortInfo}
+          </p>
+        </div>
+
+        <div>
+          {product.pickupOnly ? (
+            <div className="mb-3 text-xs bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5" />
+              Må hentes i butikk på Sortland
+            </div>
+          ) : (
+            <div className="mb-3 text-xs bg-blue-50 text-blue-800 p-2 rounded border border-blue-200 font-medium flex items-center gap-1">
+              <Award className="w-3.5 h-3.5" />
+              Kan sendes som postpakke / Hentes
+            </div>
+          )}
+
+          <div
+            className={`mb-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold ${stockInfo.wrapperClass}`}
+            aria-label={`Lagerstatus: ${stockInfo.text}`}
+          >
+            {stockInfo.icon}
+            <span>{stockInfo.text}</span>
+          </div>
+
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-2xl font-extrabold text-red-600">
+              {product.salePrice.toLocaleString('no-NO')} kr
+            </span>
+            {product.listPrice > product.salePrice && (
+              <span className="text-sm text-gray-400 line-through">
+                {product.listPrice.toLocaleString('no-NO')} kr
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onBuyProduct(product)}
+            disabled={isOutOfStock}
+            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            {isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState<Product | null>(null);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -42,7 +233,9 @@ export default function HomePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.message || 'Kunne ikke hente produkter.');
+        throw new Error(
+          data?.message || 'Kunne ikke hente produkter.'
+        );
       }
 
       setProducts(data.products || []);
@@ -65,32 +258,55 @@ export default function HomePage() {
     return itemDate >= threeDaysAgo;
   };
 
-  const calculateDiscount = (listPrice: number, salePrice: number) => {
+  const calculateDiscount = (
+    listPrice: number,
+    salePrice: number
+  ) => {
     if (!listPrice || listPrice <= salePrice) return 0;
-    return Math.round(((listPrice - salePrice) / listPrice) * 100);
+    return Math.round(
+      ((listPrice - salePrice) / listPrice) * 100
+    );
   };
 
   const getStockInfo = (stock: number): StockInfo => {
     if (stock <= 0) {
       return {
         text: 'UTSOLGT',
-        wrapperClass: 'bg-red-50 text-red-700 border-red-200',
-        icon: <XCircle className="h-4 w-4" aria-hidden="true" />,
+        wrapperClass:
+          'bg-red-50 text-red-700 border-red-200',
+        icon: (
+          <XCircle
+            className="h-4 w-4"
+            aria-hidden="true"
+          />
+        ),
       };
     }
 
     if (stock <= 5) {
       return {
         text: `Kun ${stock} stk igjen`,
-        wrapperClass: 'bg-orange-50 text-orange-700 border-orange-200',
-        icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" />,
+        wrapperClass:
+          'bg-orange-50 text-orange-700 border-orange-200',
+        icon: (
+          <AlertTriangle
+            className="h-4 w-4"
+            aria-hidden="true"
+          />
+        ),
       };
     }
 
     return {
       text: `${stock} stk på lager`,
-      wrapperClass: 'bg-green-50 text-green-700 border-green-200',
-      icon: <CheckCircle2 className="h-4 w-4" aria-hidden="true" />,
+      wrapperClass:
+        'bg-green-50 text-green-700 border-green-200',
+      icon: (
+        <CheckCircle2
+          className="h-4 w-4"
+          aria-hidden="true"
+        />
+      ),
     };
   };
 
@@ -163,9 +379,9 @@ export default function HomePage() {
                 Utvalgte kvalitetsprodukter og gode tilbud
               </h2>
               <p className="text-gray-200 text-xs md:text-sm leading-relaxed hidden sm:block">
-                Her publiserer våre fagfolk utstillingsmodeller, overskuddsvarer
-                og spesialtilbud direkte fra lageret og butikken vår i
-                Verkstedveien 2 på Sortland.
+                Her publiserer våre fagfolk utstillingsmodeller,
+                overskuddsvarer og spesialtilbud direkte fra lageret
+                og butikken vår i Verkstedveien 2 på Sortland.
               </p>
             </div>
           </div>
@@ -194,133 +410,25 @@ export default function HomePage() {
               Ingen aktive varer ennå
             </h4>
             <p className="text-sm text-gray-500">
-              Når en vare blir utsolgt eller en ny vare lagres i Monday,
-              oppdateres listen automatisk.
+              Når en vare blir utsolgt eller en ny vare lagres i
+              Monday, oppdateres listen automatisk.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => {
-              const discount = calculateDiscount(
-                product.listPrice,
-                product.salePrice
-              );
-              const isNew = isNewItem(product.createdAt);
-              const stock = Number.isFinite(product.stock)
-                ? product.stock
-                : 0;
-              const stockInfo = getStockInfo(stock);
-              const isOutOfStock = stock <= 0;
-
-              return (
-                <article
-                  key={product.id}
-                  className={`bg-white rounded-xl shadow-sm transition-all border overflow-hidden flex flex-col relative ${
-                    isOutOfStock
-                      ? 'border-gray-300 opacity-80'
-                      : 'border-gray-200 hover:shadow-md'
-                  }`}
-                >
-                  <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
-                    {discount > 0 && (
-                      <span className="bg-red-600 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-sm">
-                        -{discount}% TILBUD
-                      </span>
-                    )}
-                    {isNew && (
-                      <span className="bg-emerald-600 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        NY SISTE 3 DAGER
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    onClick={() => router.push(`/product/${product.id}`)}
-                    className="h-64 bg-gray-50 p-6 flex items-center justify-center relative overflow-hidden group cursor-pointer border-b border-gray-100"
-                  >
-                    <img
-                      src={
-                        product.images && product.images.length > 0
-                          ? product.images[0]
-                          : '/EIKLOGO.png'
-                      }
-                      alt={product.name}
-                      className={`max-h-full max-w-full object-contain transition-transform duration-300 ${
-                        isOutOfStock
-                          ? 'grayscale'
-                          : 'group-hover:scale-105'
-                      }`}
-                      onError={(event) => {
-                        event.currentTarget.src = '/EIKLOGO.png';
-                      }}
-                    />
-                  </div>
-
-                  <div className="p-5 flex-grow flex flex-col justify-between">
-                    <div>
-                      <div className="text-xs text-gray-400 font-medium mb-1">
-                        Varenr: {product.itemNumber} | {product.category}
-                      </div>
-
-                      <h4
-                        onClick={() => router.push(`/product/${product.id}`)}
-                        className="text-lg font-bold text-gray-900 mb-2 line-clamp-1 cursor-pointer hover:text-red-600 transition-colors"
-                      >
-                        {product.name}
-                      </h4>
-
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {product.shortInfo}
-                      </p>
-                    </div>
-
-                    <div>
-                      {product.pickupOnly ? (
-                        <div className="mb-3 text-xs bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5" />
-                          Må hentes i butikk på Sortland
-                        </div>
-                      ) : (
-                        <div className="mb-3 text-xs bg-blue-50 text-blue-800 p-2 rounded border border-blue-200 font-medium flex items-center gap-1">
-                          <Award className="w-3.5 h-3.5" />
-                          Kan sendes som postpakke / Hentes
-                        </div>
-                      )}
-
-                      <div
-                        className={`mb-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold ${stockInfo.wrapperClass}`}
-                        aria-label={`Lagerstatus: ${stockInfo.text}`}
-                      >
-                        {stockInfo.icon}
-                        <span>{stockInfo.text}</span>
-                      </div>
-
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-2xl font-extrabold text-red-600">
-                          {product.salePrice.toLocaleString('no-NO')} kr
-                        </span>
-                        {product.listPrice > product.salePrice && (
-                          <span className="text-sm text-gray-400 line-through">
-                            {product.listPrice.toLocaleString('no-NO')} kr
-                          </span>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProduct(product)}
-                        disabled={isOutOfStock}
-                        className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                        {isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onOpenProduct={(productId) =>
+                  router.push(`/product/${productId}`)
+                }
+                onBuyProduct={setSelectedProduct}
+                calculateDiscount={calculateDiscount}
+                isNewItem={isNewItem}
+                getStockInfo={getStockInfo}
+              />
+            ))}
           </div>
         )}
       </main>
@@ -346,7 +454,9 @@ export default function HomePage() {
             <p className="mb-1 text-white font-semibold">
               Eiksenteret Sortland
             </p>
-            <p className="mb-1">Verkstedveien 2, 8402 Sortland</p>
+            <p className="mb-1">
+              Verkstedveien 2, 8402 Sortland
+            </p>
             <p className="mb-1">Telefon: 76 12 13 60</p>
             <p>E-post: sortland@eiksenteret.no</p>
           </div>
@@ -356,9 +466,10 @@ export default function HomePage() {
               Om Eikbutikk.no
             </h5>
             <p className="text-xs leading-relaxed mb-3">
-              Eikbutikk.no er Eiksenteret Sortland sin nettkanal for salg av
-              tilbudsvarer, utstillingsmodeller og utvalgte produkter fra vårt
-              sortiment. Registrert org.nr: 936 858 031.
+              Eikbutikk.no er Eiksenteret Sortland sin nettkanal for
+              salg av tilbudsvarer, utstillingsmodeller og utvalgte
+              produkter fra vårt sortiment. Registrert org.nr:
+              936 858 031.
             </p>
             <button
               onClick={() => router.push('/vilkar')}
@@ -374,14 +485,14 @@ export default function HomePage() {
               Betaling & Forbehold
             </h5>
             <p className="text-xs leading-relaxed mb-2">
-              Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt
-              blir klargjort for enten henting i butikk i Verkstedveien 2 eller
-              sending per post.
+              Vi tilbyr enkel betaling med Vipps. Alle varer
+              registrert solgt blir klargjort for enten henting i
+              butikk i Verkstedveien 2 eller sending per post.
             </p>
             <p className="text-[11px] text-gray-500 leading-relaxed italic border-t border-neutral-800 pt-2">
-              <strong>Forbehold:</strong> Vi tar forbehold om skrivefeil,
-              feilprising, spesifikasjonsendringer og at varer kan være utsolgt
-              ved mellomdagssalg i butikk.
+              <strong>Forbehold:</strong> Vi tar forbehold om
+              skrivefeil, feilprising, spesifikasjonsendringer og at
+              varer kan være utsolgt ved mellomdagssalg i butikk.
             </p>
           </div>
         </div>
