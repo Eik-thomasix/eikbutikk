@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const VIEWS_COLUMN_ID = 'numeric_mm73dqv4';
 const HOME_VIEWS_COLUMN_ID = 'numeric_mm75pe46';
-const PRODUCT_BOARD_ID = process.env.MONDAY_PRODUCTS_BOARD_ID!;
+const PRODUCT_BOARD_ID = process.env.MONDAY_BOARD_ID!;
 const MONDAY_API_KEY = process.env.MONDAY_API_KEY!;
 
 async function mondayRequest(query: string, variables: Record<string, unknown>) {
