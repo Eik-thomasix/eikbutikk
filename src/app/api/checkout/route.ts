@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Ufullstendig data' }, { status: 400 });
     }
 
-    console.log(`🚀 Prosesserer salg for varenr ${product.itemNumber}: ${product.name}`);
+    console.log(`🚀 Prosesserer salg for varenummer ${product.itemNumber}: ${product.name}`);
 
     // 1. Forsøk e-postutsendinger via Resend
     if (process.env.RESEND_API_KEY) {
