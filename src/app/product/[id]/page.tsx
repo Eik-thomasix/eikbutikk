@@ -303,6 +303,15 @@ export default function ProductDetailPage() {
     product.listPrice - product.salePrice
   );
   const isOutOfStock = product.stock <= 0;
+  const compactDescriptionHtml = product.descriptionHtml
+    .replace(
+      /<p(?:\s[^>]*)?>(?:\s|&nbsp;|<br\s*\/?\s*>)*<\/p>/gi,
+      ''
+    )
+    .replace(
+      /(?:<br\s*\/?\s*>\s*){2,}/gi,
+      '<br />'
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -485,9 +494,9 @@ export default function ProductDetailPage() {
           </h3>
 
           <div
-            className="prose prose-red max-w-none text-gray-700 text-sm leading-relaxed"
+            className="prose prose-red max-w-none text-sm leading-6 text-gray-700 [&_h1]:mb-2 [&_h1]:mt-4 [&_h2]:mb-2 [&_h2]:mt-4 [&_h3]:mb-2 [&_h3]:mt-4 [&_h4]:mb-1.5 [&_h4]:mt-3 [&_hr]:my-4 [&_li]:my-0.5 [&_ol]:my-2 [&_p]:my-2 [&_p:empty]:hidden [&_ul]:my-2"
             dangerouslySetInnerHTML={{
-              __html: product.descriptionHtml,
+              __html: compactDescriptionHtml,
             }}
           />
         </div>
