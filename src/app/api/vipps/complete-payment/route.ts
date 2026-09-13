@@ -1,27 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVippsPaymentStatus } from '@/lib/vipps';
 
-/**
- * Complete payment route for Eikbutikk.
- *
- * Flow:
- * 1. Receive a Vipps reference.
- * 2. Verify the payment directly with Vipps.
- * 3. Find the matching order in Monday.
- * 4. Read trusted product and customer data from "Produkt JSON".
- * 5. Call the existing /api/checkout route.
- * 6. Mark the Monday order as paid and stock-updated.
- * 7. Return the URL for the confirmation page.
- *
- * IMPORTANT:
- * Vipps AUTHORIZED means the customer approved the payment and the amount is
- * reserved. CAPTURED means the amount has been captured. This route accepts
- * both states for testing. See TODO CAPTURE below before production launch.
- */
-
 const ORDER_GROUPS = {
-  waiting: 'group_mm738d0y',
-  paid: 'group_mm73t3k9',
   processing: 'group_mm73ae8b',
   cancelled: 'group_mm7317nf',
 } as const;
@@ -51,13 +31,21 @@ interface StoredOrderData {
     id: string;
     name: string;
     salePrice: number;
+    shippingPrice?: number;
+    totalPrice?: number;
     stock?: number;
     itemNumber?: string;
+    weight?: number;
   };
   customer: Record<string, unknown> & {
     name: string;
     email: string;
     phone: string;
+    deliveryMethod?: string;
+  };
+  shipping?: {
+    price?: number;
+    weight?: number;
     deliveryMethod?: string;
   };
   createdAt?: string;
@@ -73,10 +61,7 @@ interface MondayColumnValue {
 interface MondayOrderItem {
   id: string;
   name: string;
-  group?: {
-    id: string;
-    title: string;
-  } | null;
+  group?: { id: string; title: string } | null;
   column_values: MondayColumnValue[];
 }
 
@@ -111,15 +96,11 @@ async function mondayRequest(
 
   const data = await response.json();
 
-  if (!response.ok) {
-    console.error('Monday HTTP error:', response.status, data);
-    throw new Error(`Monday svarte med HTTP-status ${response.status}.`);
-  }
-
-  if (data.errors) {
-    console.error('Monday GraphQL error:', JSON.stringify(data.errors, null, 2));
+  if (!response.ok || data.errors) {
+    console.error('Monday-feil:', JSON.stringify(data, null, 2));
     throw new Error(
-      data.errors[0]?.message || 'Monday returnerte en GraphQL-feil.'
+      data?.errors?.[0]?.message ||
+        `Monday svarte med HTTP-status ${response.status}.`
     );
   }
 
@@ -131,28 +112,14 @@ function getColumn(item: MondayOrderItem, columnId: string) {
 }
 
 function parseMondayLongText(column?: MondayColumnValue): string {
-  if (!column) {
-    return '';
-  }
-
-  if (column.text?.trim()) {
-    return column.text.trim();
-  }
-
-  if (!column.value) {
-    return '';
-  }
+  if (!column) return '';
+  if (column.text?.trim()) return column.text.trim();
+  if (!column.value) return '';
 
   try {
     const parsed = JSON.parse(column.value);
-
-    if (typeof parsed === 'string') {
-      return parsed;
-    }
-
-    if (typeof parsed?.text === 'string') {
-      return parsed.text;
-    }
+    if (typeof parsed === 'string') return parsed;
+    if (typeof parsed?.text === 'string') return parsed.text;
   } catch {
     return column.value;
   }
@@ -162,14 +129,8 @@ function parseMondayLongText(column?: MondayColumnValue): string {
 
 function isChecked(column?: MondayColumnValue): boolean {
   const text = column?.text?.trim().toLowerCase();
-
-  if (text === 'v' || text === 'yes' || text === 'true' || text === 'checked') {
-    return true;
-  }
-
-  if (!column?.value) {
-    return false;
-  }
+  if (['v', 'yes', 'true', 'checked'].includes(text || '')) return true;
+  if (!column?.value) return false;
 
   try {
     const parsed = JSON.parse(column.value);
@@ -192,10 +153,7 @@ async function findMondayOrder(
           items {
             id
             name
-            group {
-              id
-              title
-            }
+            group { id title }
             column_values(ids: [
               "${ORDER_COLUMNS.orderNumber}",
               "${ORDER_COLUMNS.vippsOrderId}",
@@ -204,11 +162,7 @@ async function findMondayOrder(
               "${ORDER_COLUMNS.vippsStatus}",
               "${ORDER_COLUMNS.stockUpdated}",
               "${ORDER_COLUMNS.productJson}"
-            ]) {
-              id
-              text
-              value
-            }
+            ]) { id text value }
           }
         }
       }
@@ -222,20 +176,22 @@ async function findMondayOrder(
       boardIds: [boardId],
       cursor,
     });
-
     const page = data?.data?.boards?.[0]?.items_page;
     const items: MondayOrderItem[] = page?.items || [];
 
     const match = items.find((item) => {
-      const orderNumber = getColumn(item, ORDER_COLUMNS.orderNumber)?.text?.trim();
-      const vippsOrderId = getColumn(item, ORDER_COLUMNS.vippsOrderId)?.text?.trim();
+      const orderNumber = getColumn(
+        item,
+        ORDER_COLUMNS.orderNumber
+      )?.text?.trim();
+      const vippsOrderId = getColumn(
+        item,
+        ORDER_COLUMNS.vippsOrderId
+      )?.text?.trim();
       return orderNumber === reference || vippsOrderId === reference;
     });
 
-    if (match) {
-      return match;
-    }
-
+    if (match) return match;
     cursor = page?.cursor || null;
   } while (cursor);
 
@@ -262,9 +218,7 @@ async function updateMondayOrder(params: {
           board_id: $boardId
           item_id: $itemId
           column_values: $columnValues
-        ) {
-          id
-        }
+        ) { id }
       }
     `;
 
@@ -276,18 +230,12 @@ async function updateMondayOrder(params: {
   }
 
   if (groupId) {
-    const moveMutation = `
+    const mutation = `
       mutation MoveOrder($itemId: ID!, $groupId: String!) {
-        move_item_to_group(item_id: $itemId, group_id: $groupId) {
-          id
-        }
+        move_item_to_group(item_id: $itemId, group_id: $groupId) { id }
       }
     `;
-
-    await mondayRequest(apiKey, moveMutation, {
-      itemId,
-      groupId,
-    });
+    await mondayRequest(apiKey, mutation, { itemId, groupId });
   }
 }
 
@@ -295,11 +243,10 @@ function validateStoredOrder(data: unknown): asserts data is StoredOrderData {
   const order = data as StoredOrderData;
 
   if (
-    !order ||
-    !order.orderId ||
+    !order?.orderId ||
     !order.product?.id ||
     !order.product?.name ||
-    !Number.isFinite(Number(order.product?.salePrice)) ||
+    !Number.isFinite(Number(order.product.salePrice)) ||
     !order.customer?.name ||
     !order.customer?.email ||
     !order.customer?.phone
@@ -308,21 +255,26 @@ function validateStoredOrder(data: unknown): asserts data is StoredOrderData {
   }
 }
 
+function calculateExpectedTotal(order: StoredOrderData): number {
+  const salePrice = Number(order.product.salePrice);
+  const shippingPrice = Number(
+    order.product.shippingPrice ?? order.shipping?.price ?? 0
+  );
+  const storedTotal = Number(order.product.totalPrice);
+
+  return Number.isFinite(storedTotal) && storedTotal > 0
+    ? storedTotal
+    : salePrice + shippingPrice;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const reference = String(body?.reference || '').trim();
 
-    if (!reference) {
-      return NextResponse.json(
-        { success: false, message: 'Vipps-referanse mangler.' },
-        { status: 400 }
-      );
-    }
-
     if (!/^[a-zA-Z0-9-]{8,64}$/.test(reference)) {
       return NextResponse.json(
-        { success: false, message: 'Vipps-referansen har ugyldig format.' },
+        { success: false, message: 'Vipps-referansen mangler eller er ugyldig.' },
         { status: 400 }
       );
     }
@@ -399,11 +351,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const stockAlreadyUpdated = isChecked(
-      getColumn(mondayOrder, ORDER_COLUMNS.stockUpdated)
-    );
-
-    if (stockAlreadyUpdated) {
+    if (isChecked(getColumn(mondayOrder, ORDER_COLUMNS.stockUpdated))) {
       return NextResponse.json({
         success: true,
         verified: true,
@@ -417,13 +365,11 @@ export async function POST(request: NextRequest) {
     const productJson = parseMondayLongText(
       getColumn(mondayOrder, ORDER_COLUMNS.productJson)
     );
-
     if (!productJson) {
       throw new Error('Produkt JSON er tom på Monday-ordren.');
     }
 
     let storedOrder: unknown;
-
     try {
       storedOrder = JSON.parse(productJson);
     } catch {
@@ -442,8 +388,9 @@ export async function POST(request: NextRequest) {
     const capturedAmount = Number(
       payment?.aggregate?.capturedAmount?.value || 0
     );
-    const expectedAmount = Math.round(Number(storedOrder.product.totalPrice ??(Number(storedOrder.product.salePrice) + Number(storedOrder.product.shippingPrice || 0))) * 100);
     const confirmedAmount = Math.max(authorizedAmount, capturedAmount);
+    const expectedTotal = calculateExpectedTotal(storedOrder);
+    const expectedAmount = Math.round(expectedTotal * 100);
 
     if (confirmedAmount !== expectedAmount) {
       throw new Error(
@@ -451,24 +398,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /*
-     * TODO CAPTURE BEFORE PRODUCTION:
-     * AUTHORIZED reserves the amount, while CAPTURED confirms capture.
-     * Decide whether Eikbutikk should capture automatically here or only when
-     * the product is shipped/collected. Do not describe an AUTHORIZED payment
-     * as captured in customer communication.
-     */
+    const checkoutProduct = {
+      ...storedOrder.product,
+      shippingPrice: Number(
+        storedOrder.product.shippingPrice ?? storedOrder.shipping?.price ?? 0
+      ),
+      totalPrice: expectedTotal,
+    };
 
     const checkoutResponse = await fetch(
       `${getInternalBaseUrl(request)}/api/checkout`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          product: storedOrder.product,
+          product: checkoutProduct,
           customer: storedOrder.customer,
+          shipping: storedOrder.shipping,
           payment: {
             reference,
             state,
@@ -505,9 +451,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('Vipps-ordre fullført:', {
+    console.log('Vipps-ordre fullført med frakt:', {
       reference,
       state,
+      expectedTotal,
       mondayItemId: mondayOrder.id,
     });
 
