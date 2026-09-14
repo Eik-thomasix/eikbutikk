@@ -303,11 +303,6 @@ export default function ProductDetailPage() {
     product.listPrice - product.salePrice
   );
   const isOutOfStock = product.stock <= 0;
-  const compactDescriptionHtml = product.descriptionHtml
-    .replace(/<p(?:\s[^>]*)?>(?:\s|&nbsp;|<br\s*\/?\s*>)*<\/p>/gi, '')
-    .replace(/(?:<br\s*\/?\s*>\s*){2,}/gi, '<br />')
-    .replace(/(?:&nbsp;\s*){2,}/gi, ' ');
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -489,57 +484,11 @@ export default function ProductDetailPage() {
           </h3>
 
           <div
-            className="product-description max-w-none text-sm text-gray-700"
+            className="prose prose-red max-w-none text-gray-700 text-sm leading-relaxed"
             dangerouslySetInnerHTML={{
-              __html: compactDescriptionHtml,
+              __html: product.descriptionHtml,
             }}
           />
-
-          <style jsx global>{`
-            .product-description {
-              line-height: 1.5;
-            }
-
-            .product-description p {
-              margin: 0.45rem 0 !important;
-            }
-
-            .product-description h1,
-            .product-description h2,
-            .product-description h3,
-            .product-description h4,
-            .product-description h5,
-            .product-description h6 {
-              margin: 1rem 0 0.35rem !important;
-              line-height: 1.3;
-            }
-
-            .product-description ul,
-            .product-description ol {
-              margin: 0.45rem 0 !important;
-              padding-left: 1.25rem;
-            }
-
-            .product-description li {
-              margin: 0.2rem 0 !important;
-            }
-
-            .product-description hr {
-              margin: 0.9rem 0 !important;
-            }
-
-            .product-description br {
-              line-height: 0.65;
-            }
-
-            .product-description > :first-child {
-              margin-top: 0 !important;
-            }
-
-            .product-description > :last-child {
-              margin-bottom: 0 !important;
-            }
-          `}</style>
         </div>
       </main>
 
