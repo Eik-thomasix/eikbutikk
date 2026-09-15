@@ -1,9 +1,38 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
-export const metadata: Metadata = {title: 'Tilbudsboden.no - Restpartier, kampanjevarer og gode kjøp | Eiksenteret Sortland',
-description:
-'Finn restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp fra Eiksenteret Sortland.',
+export const metadata: Metadata = {
+  metadataBase: new URL('https://tilbudsboden.no'),
+  title:
+    'Tilbudsboden.no - Restpartier, kampanjevarer og gode kjøp | Eiksenteret Sortland',
+  description:
+    'Finn restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp fra Eiksenteret Sortland.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'nb_NO',
+    url: 'https://tilbudsboden.no',
+    siteName: 'Tilbudsboden.no',
+    title: 'Tilbudsboden.no - Fra Eiksenteret Sortland',
+    description:
+      'Restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp fra Eiksenteret Sortland.',
+    images: [
+      {
+        url: '/EiksenteretSortland.png',
+        alt: 'Tilbudsboden.no fra Eiksenteret Sortland',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tilbudsboden.no - Fra Eiksenteret Sortland',
+    description:
+      'Restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp fra Eiksenteret Sortland.',
+    images: ['/EiksenteretSortland.png'],
+  },
 };
 
 export default function RootLayout({
