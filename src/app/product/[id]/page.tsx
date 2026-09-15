@@ -320,7 +320,7 @@ export default function ProductDetailPage() {
             onClick={() => router.push('/')}
           >
             <img
-              src="/EIKLOGO.png"
+              src="/tilbudsbodenlogo.svg"
               alt="Eiksenteret Logo"
               className="h-9 object-contain"
             />
