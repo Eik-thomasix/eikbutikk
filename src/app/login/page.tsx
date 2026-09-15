@@ -42,9 +42,9 @@ export default function LoginPage() {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
         <div className="bg-neutral-950 p-8 text-white text-center border-b border-neutral-800">
           <img
-            src="/EIKLOGO.png"
-            alt="Eiksenteret Sortland"
-            className="h-12 mx-auto mb-3 object-contain"
+            src="/tilbudsbodenlogo.svg"
+            alt="Tilbudsboden.no - fra Eiksenteret Sortland"
+            className="h-16 max-w-full mx-auto mb-3 object-contain"
           />
           <h1 className="text-xl font-bold">Tilbudsboden.no</h1>
           <p className="text-gray-400 text-xs mt-1">
