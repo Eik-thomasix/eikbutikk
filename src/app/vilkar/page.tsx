@@ -18,12 +18,9 @@ export default function TermsPage() {
           >
             <ArrowLeft className="w-4 h-4" /> Tilbake til nettbutikken
           </button>
-          <div className="flex items-center gap-2">
-            <span className="bg-red-600 text-white font-extrabold px-2.5 py-0.5 rounded text-sm">
-              EIK
-            </span>
-            <span className="font-bold text-gray-900 text-sm">Tilbudsboden.no</span>
-          </div>
+          <span className="font-bold text-gray-900 text-sm">
+            Tilbudsboden.no
+          </span>
         </div>
       </header>
 
@@ -48,7 +45,7 @@ export default function TermsPage() {
               </h2>
               <p>
                 <strong>Selger:</strong><br />
-                Selskapsnavn: Eiksenteret Sortland (Sortland Landbrukssenter AS / tilhørende enhet)<br />
+                Selskapsnavn: Sortland Maskin AS (Eiksenteret Sortland)<br />
                 Organisasjonsnummer: 936 858 031<br />
                 Forretnings- og besøksadresse: Verkstedveien 2, 8402 Sortland<br />
                 E-post: sortland@eiksenteret.no<br />
