@@ -38,7 +38,7 @@ function OrderConfirmedContent() {
           </div>
 
           <p className="mb-2 text-sm font-bold uppercase tracking-widest text-red-600">
-            Eikbutikk.no
+            Tilbudsboden.no
           </p>
 
           <h1 className="mb-4 text-3xl font-extrabold text-gray-900">

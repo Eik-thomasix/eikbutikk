@@ -325,7 +325,7 @@ export default function ProductDetailPage() {
               className="h-9 object-contain"
             />
             <span className="font-bold text-gray-900 text-base hidden sm:inline">
-              Eikbutikk.no
+              Tilbudsboden.no
             </span>
           </div>
         </div>
