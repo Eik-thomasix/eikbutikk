@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
@@ -41,9 +41,15 @@ export default function LoginPage() {
     <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
         <div className="bg-neutral-950 p-8 text-white text-center border-b border-neutral-800">
-          <img src="/EIKLOGO.png" alt="Eiksenteret" className="h-12 mx-auto mb-3 object-contain" />
-          <h1 className="text-xl font-bold">Eikbutikk.no</h1>
-          <p className="text-gray-400 text-xs mt-1">Eiksenteret Sortland - Intern Portefølje</p>
+          <img
+            src="/EIKLOGO.png"
+            alt="Eiksenteret Sortland"
+            className="h-12 mx-auto mb-3 object-contain"
+          />
+          <h1 className="text-xl font-bold">Tilbudsboden.no</h1>
+          <p className="text-gray-400 text-xs mt-1">
+            Fra Eiksenteret Sortland
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -73,7 +79,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
           >
-            {loading ? 'Sjekker passord...' : 'Lås opp plattformen'}
+            {loading ? 'Sjekker passord...' : 'Åpne butikken'}
           </button>
         </form>
 

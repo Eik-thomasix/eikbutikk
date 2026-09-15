@@ -347,10 +347,10 @@ export default function HomePage() {
             />
             <div className="border-l border-gray-300 pl-4">
               <h1 className="text-lg md:text-xl font-bold tracking-tight text-gray-900 leading-none">
-                Eikbutikk.no
+                Tilbudsboden.no
               </h1>
               <p className="text-xs text-gray-500 mt-1">
-                Gode kjøp og tilbud fra Eiksenteret Sortland
+                Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland
               </p>
             </div>
           </div>
@@ -373,15 +373,15 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent flex items-center p-6 md:p-10">
             <div className="max-w-xl text-white">
               <span className="inline-block bg-red-600 text-white font-bold text-xs uppercase tracking-widest px-3 py-1 rounded mb-2">
-                Velkommen til Eikbutikk.no
+                Velkommen til Tilbudsboden.no
               </span>
               <h2 className="text-xl md:text-3xl font-extrabold mb-2 tracking-tight text-white">
-                Utvalgte kvalitetsprodukter og gode tilbud
+                Restpartier, kampanjevarer og gode kjøp
               </h2>
               <p className="text-gray-200 text-xs md:text-sm leading-relaxed hidden sm:block">
-                Her finner du gode tilbud, utstillingsmodeller,
-                overskuddsvarer og spesialkjøp direkte fra lageret
-                og butikken vår i Verkstedveien 2 på Sortland.
+                Her finner du restpartier, kampanjevarer,
+                utstillingsmodeller og ekstra gode kjøp direkte fra
+                lageret og butikken vår på Sortland.
               </p>
             </div>
           </div>
@@ -463,12 +463,12 @@ export default function HomePage() {
 
           <div>
             <h5 className="text-white font-bold mb-3 text-base">
-              Om Eikbutikk.no
+              Om Tilbudsboden.no
             </h5>
             <p className="text-xs leading-relaxed mb-3">
-              Eikbutikk.no er Eiksenteret Sortland sin nettkanal for
-              salg av tilbudsvarer, utstillingsmodeller og utvalgte
-              produkter fra vårt sortiment. Registrert org.nr:
+              Tilbudsboden.no er Eiksenteret Sortland sin nettkanal for
+              salg av restpartier, kampanjevarer, utstillingsmodeller
+              og ekstra gode kjøp. Registrert org.nr:
               936 858 031.
             </p>
             <button
