@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, {
   useCallback,
@@ -137,7 +137,7 @@ function ProductCard({
           src={
             product.images && product.images.length > 0
               ? product.images[0]
-              : '/EIKLOGO.png'
+              : '/tilbudsbodenlogo.svg'
           }
           alt={product.name}
           className={`max-h-full max-w-full object-contain transition-transform duration-300 ${
@@ -146,7 +146,7 @@ function ProductCard({
               : 'group-hover:scale-105'
           }`}
           onError={(event) => {
-            event.currentTarget.src = '/EIKLOGO.png';
+            event.currentTarget.src = '/tilbudsbodenlogo.svg';
           }}
         />
       </div>
@@ -341,8 +341,8 @@ export default function HomePage() {
             onClick={() => router.push('/')}
           >
             <img
-              src="/EIKLOGO.png"
-              alt="Eiksenteret Sortland Logo"
+              src="/tilbudsbodenlogo.svg"
+              alt="Tilbudsboden.no - fra Eiksenteret Sortland"
               className="h-10 md:h-12 object-contain"
             />
             <div className="border-l border-gray-300 pl-4">
@@ -446,8 +446,8 @@ export default function HomePage() {
           <div>
             <div className="inline-block bg-white p-2 rounded-lg mb-4">
               <img
-                src="/EIKLOGO.png"
-                alt="Eiksenteret Logo"
+                src="/tilbudsbodenlogo.svg"
+                alt="Tilbudsboden.no - fra Eiksenteret Sortland"
                 className="h-8 object-contain"
               />
             </div>
