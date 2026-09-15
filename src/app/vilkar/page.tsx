@@ -22,7 +22,7 @@ export default function TermsPage() {
             <span className="bg-red-600 text-white font-extrabold px-2.5 py-0.5 rounded text-sm">
               EIK
             </span>
-            <span className="font-bold text-gray-900 text-sm">Eikbutikk.no</span>
+            <span className="font-bold text-gray-900 text-sm">Tilbudsboden.no</span>
           </div>
         </div>
       </header>
@@ -36,7 +36,7 @@ export default function TermsPage() {
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900">Salgsvilkår & Kjøpsbetingelser</h1>
             <p className="text-gray-500 text-sm mt-1">
-              Gjeldende for netthandel på Eikbutikk.no (Eiksenteret Sortland)
+              Gjeldende for netthandel på Tilbudsboden.no (Eiksenteret Sortland)
             </p>
           </div>
 
@@ -55,7 +55,7 @@ export default function TermsPage() {
                 Telefon: 76 12 13 60<br />
                 <br />
                 <strong>Kjøper:</strong><br />
-                Er den forbrukeren som foretar bestillingen via Eikbutikk.no.
+                Er den forbrukeren som foretar bestillingen via Tilbudsboden.no.
               </p>
             </div>
 
@@ -65,7 +65,7 @@ export default function TermsPage() {
                 2. Priser og Betaling
               </h2>
               <p className="mb-2">
-                Alle priser på Eikbutikk.no oppgis i norske kroner (NOK) og inkluderer merverdiavgift (MVA). Totalkostnaden for kjøpet fremkommer i kassen før betaling og inkluderer evt. spesifiserte avgifter.
+                Alle priser på Tilbudsboden.no oppgis i norske kroner (NOK) og inkluderer merverdiavgift (MVA). Totalkostnaden for kjøpet fremkommer i kassen før betaling og inkluderer evt. spesifiserte avgifter.
               </p>
               <p>
                 <strong>Betalingsmetode:</strong> Betaling skjer trygt og enkelt via <strong>Vipps</strong>. Kjøpesummen reserveres/belastes i henhold til gjeldende regler for Vipps eCom ved fullføring av transaksjonen. Ingen ordre trer i kraft før betalingen er bekreftet gjennomført.
@@ -165,7 +165,7 @@ export default function TermsPage() {
 
       {/* Footer */}
       <footer className="bg-neutral-900 text-gray-400 text-xs py-6 text-center border-t border-neutral-800">
-        <p>© {new Date().getFullYear()} Eikbutikk.no - Eiksenteret Sortland (Org.nr: 936 858 031)</p>
+        <p>© {new Date().getFullYear()} Tilbudsboden.no - Eiksenteret Sortland (Org.nr: 936 858 031)</p>
       </footer>
     </div>
   );
