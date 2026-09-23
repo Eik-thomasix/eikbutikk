@@ -80,8 +80,8 @@ async function sendOrderEmails(params: {
     <div style="margin:0;background:#f3f4f6;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111827;">
       <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
         <div style="background:#d71920;color:#ffffff;padding:24px;text-align:center;">
-          <h1 style="margin:0;font-size:24px;">Eikbutikk.no</h1>
-          <p style="margin:6px 0 0;font-size:14px;">Eiksenteret Sortland</p>
+          <h1 style="margin:0;font-size:24px;">Tilbudsboden.no</h1>
+          <p style="margin:6px 0 0;font-size:14px;">Fra Eiksenteret Sortland</p>
         </div>
 
         <div style="padding:28px;">
@@ -125,7 +125,7 @@ async function sendOrderEmails(params: {
     <div style="margin:0;background:#f3f4f6;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111827;">
       <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
         <div style="background:#171717;color:#ffffff;padding:22px 26px;">
-          <h1 style="margin:0;font-size:23px;">Nytt salg i Eikbutikk.no</h1>
+          <h1 style="margin:0;font-size:23px;">Nytt salg i Tilbudsboden.no</h1>
           <p style="margin:6px 0 0;color:#d1d5db;font-size:14px;">Ordre ${safe.orderReference}</p>
         </div>
 
@@ -163,7 +163,7 @@ async function sendOrderEmails(params: {
   });
 
   const storeResult = await resend.emails.send({
-    from: 'Eikbutikk Salg <onboarding@resend.dev>',
+    from: 'Tilbudsboden.no <onboarding@resend.dev>',
     to: [TEST_EMAIL_ADDRESS],
     subject: `[TEST BUTIKK] Ny ordre ${safe.orderReference} · ${product.itemNumber || product.name}`,
     html: storeEmailHtml,
