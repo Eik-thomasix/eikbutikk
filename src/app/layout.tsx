@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const CLARITY_PROJECT_ID = 'ymtd4eja3x';
@@ -49,6 +50,8 @@ export default function RootLayout({
     <html lang="no">
       <body className="antialiased bg-gray-50 text-gray-900">
         {children}
+
+        <Analytics />
 
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
