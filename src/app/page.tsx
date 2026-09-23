@@ -148,7 +148,28 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col bg-gray-50">
       <header className="z-50 bg-neutral-900 px-4 py-2 text-sm text-white"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row"><div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"><span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-red-600" />Verkstedveien 2, 8402 Sortland</span><span className="flex items-center gap-1"><Phone className="h-4 w-4 text-red-600" />76 12 13 60</span><span className="flex items-center gap-1"><Mail className="h-4 w-4 text-red-600" />sortland@eiksenteret.no</span></div><div className="text-xs text-gray-400">Org.nr: 936 858 031 | Eiksenteret Sortland</div></div></header>
       <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
-      <section className="mx-auto w-full max-w-7xl px-4 pb-2 pt-4"><div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-neutral-900 shadow-md"><img src="/EiksenteretSortland.png" alt="Eiksenteret Sortland Butikk" className="max-h-[280px] w-full bg-neutral-900 object-contain" /><div className="absolute inset-0 flex items-center bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent p-6 md:p-10"><div className="max-w-xl text-white"><span className="mb-2 inline-block rounded bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">Velkommen til Tilbudsboden.no</span><h2 className="mb-2 text-xl font-extrabold tracking-tight text-white md:text-3xl">Restpartier, kampanjevarer og gode kjøp</h2><p className="hidden text-xs leading-relaxed text-gray-200 sm:block md:text-sm">Her finner du restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp direkte fra lageret og butikken vår på Sortland.</p></div></div></div></section>
+      <section className="mx-auto w-full max-w-7xl px-4 pb-2 pt-4">
+        <div className="relative h-[280px] overflow-hidden rounded-2xl border border-gray-200 shadow-md sm:h-[320px]">
+          <img
+            src="/EiksenteretSortland.png"
+            alt="Eiksenteret Sortland Butikk"
+            className="h-full w-full object-cover object-center"
+          />
+          <div className="absolute inset-0 flex items-center bg-gradient-to-r from-black/80 via-black/45 to-transparent p-6 md:p-10">
+            <div className="max-w-xl text-white">
+              <span className="mb-2 inline-block rounded bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
+                Velkommen til Tilbudsboden.no
+              </span>
+              <h2 className="mb-2 text-xl font-extrabold tracking-tight text-white md:text-4xl">
+                Restpartier, kampanjevarer og gode kjøp
+              </h2>
+              <p className="hidden text-sm leading-relaxed text-gray-100 sm:block">
+                Her finner du restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp direkte fra lageret og butikken vår på Sortland.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
       <section className="mx-auto w-full max-w-7xl px-4 pt-4">
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:flex-row md:items-center md:justify-center">
           {[
