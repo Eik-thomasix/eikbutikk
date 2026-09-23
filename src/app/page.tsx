@@ -47,7 +47,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, onBuyWithKlarna, 
   const isOutOfStock = stock <= 0;
 
   return (
-    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all ${isOutOfStock ? 'border-gray-300 opacity-80' : 'border-gray-200 hover:shadow-md'}`}>
+    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 ${isOutOfStock ? 'border-gray-300 opacity-80' : 'border-gray-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.10)]'}`}>
       <div className="absolute left-3 top-3 z-10 flex flex-col gap-1.5">
         {discount > 0 && (
           <span className="-rotate-2 rounded-lg border border-white/40 bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-3 py-1.5 text-xs font-black text-white shadow-[0_5px_14px_rgba(220,38,38,0.55)] ring-1 ring-red-800/20">
@@ -99,7 +99,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, onBuyWithKlarna, 
 
           <div className="pt-1">
             <div className="grid grid-cols-[1.8fr_0.8fr] gap-3">
-              <button type="button" onClick={() => onBuyWithVipps(product)} disabled={isOutOfStock} className="group flex min-h-[60px] transform items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-4 py-4 text-base font-extrabold text-white shadow-[0_6px_18px_rgba(255,91,36,0.35)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_12px_28px_rgba(255,91,36,0.5)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
+              <button type="button" onClick={() => onBuyWithVipps(product)} disabled={isOutOfStock} className="group flex min-h-[60px] transform items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-4 py-4 text-base font-extrabold text-white shadow-[0_4px_14px_rgba(255,90,30,0.25)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_7px_20px_rgba(255,90,30,0.35)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
                 <ShoppingBag className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" /><span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}</span>
               </button>
               <button type="button" onClick={onBuyWithKlarna} disabled={isOutOfStock} className="flex min-h-[56px] transform items-center justify-center rounded-2xl border-2 border-[#ff8fb0] bg-[#ffb3c7] px-3 py-3.5 text-sm font-extrabold leading-tight text-gray-950 shadow-[0_5px_14px_rgba(255,143,176,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[#ff5f8f] hover:bg-[#ff7fa6] hover:shadow-[0_9px_22px_rgba(255,95,143,0.42)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
@@ -147,15 +147,15 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <header className="z-50 bg-neutral-900 px-4 py-2 text-sm text-white"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row"><div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"><span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-red-600" />Verkstedveien 2, 8402 Sortland</span><span className="flex items-center gap-1"><Phone className="h-4 w-4 text-red-600" />76 12 13 60</span><span className="flex items-center gap-1"><Mail className="h-4 w-4 text-red-600" />sortland@eiksenteret.no</span></div><div className="text-xs text-gray-400">Org.nr: 936 858 031 | Eiksenteret Sortland</div></div></header>
-      <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
+      <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-[0_3px_12px_rgba(0,0,0,0.06)]"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
       <section className="mx-auto w-full max-w-7xl px-4 pb-2 pt-4">
-        <div className="relative h-[280px] overflow-hidden rounded-2xl border border-gray-200 shadow-md sm:h-[320px]">
+        <div className="relative h-[280px] overflow-hidden rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.08)] sm:h-[320px]">
           <img
             src="/EiksenteretSortland.png"
             alt="Eiksenteret Sortland Butikk"
             className="h-full w-full object-cover object-[center_65%]"
           />
-          <div className="absolute inset-0 flex items-center justify-end bg-gradient-to-l from-black/80 via-black/40 to-transparent p-6 md:p-10">
+          <div className="absolute inset-0 flex items-center justify-end bg-gradient-to-l from-black/90 via-black/60 to-black/10 p-6 md:p-10 md:pr-16">
             <div className="max-w-xl text-right text-white">
               <span className="mb-2 inline-block rounded bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
                 Velkommen til Tilbudsboden.no
@@ -171,7 +171,7 @@ export default function HomePage() {
         </div>
       </section>
       <section className="mx-auto w-full max-w-7xl px-4 pt-4">
-        <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:flex-row md:items-center md:justify-center">
+        <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:justify-center">
           {[
             'Alt inkludert – ingen overraskelser',
             'Rask levering eller hent i butikk',
