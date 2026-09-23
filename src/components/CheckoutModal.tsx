@@ -62,7 +62,6 @@ export default function CheckoutModal({
   );
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [klarnaMessage, setKlarnaMessage] = useState('');
 
   const totalPrice = useMemo(
     () => product.salePrice + shippingPrice,
@@ -173,7 +172,6 @@ export default function CheckoutModal({
   const handleVippsPayment = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage('');
-    setKlarnaMessage('');
 
     const normalizedPostalCode = postalCode.replace(/\D/g, '').slice(0, 4);
 
@@ -249,13 +247,6 @@ export default function CheckoutModal({
     }
   };
 
-  const handleKlarnaPreview = () => {
-    setErrorMessage('');
-    setKlarnaMessage(
-      'Klarna lanseres snart på Tilbudsboden.no. Knappen er foreløpig kun en forhåndsvisning.'
-    );
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
@@ -304,14 +295,7 @@ export default function CheckoutModal({
           </div>
         )}
 
-        {klarnaMessage && (
-          <div
-            role="status"
-            className="mt-4 rounded-lg border border-[#ffb3c7] bg-[#fff0f5] p-3 text-sm font-medium text-gray-900"
-          >
-            {klarnaMessage}
-          </div>
-        )}
+
 
         <form onSubmit={handleVippsPayment} className="mt-5 space-y-4">
           <div>
@@ -470,36 +454,20 @@ export default function CheckoutModal({
             </div>
           )}
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <button
-              type="submit"
-              disabled={
-                loading ||
-                shippingLoading ||
-                (deliveryMethod === 'Postsending' && !shippingReady)
-              }
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#ff5b24] px-4 py-3 font-bold text-white shadow transition duration-200 hover:bg-[#e04b18] disabled:cursor-not-allowed disabled:bg-gray-400"
-            >
-              {loading && <Loader2 className="h-5 w-5 animate-spin" />}
-              {loading
-                ? 'Behandler...'
-                : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleKlarnaPreview}
-              disabled={loading}
-              className="flex w-full items-center justify-center rounded-md border border-black bg-[#ffb3c7] px-4 py-3 font-bold text-black shadow transition duration-200 hover:bg-[#ff9eb9] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Kjøp med Klarna
-            </button>
-          </div>
-
-          <p className="text-center text-xs text-gray-500">
-            Klarna er foreløpig ikke aktivert. Knappen viser kun planlagt
-            betalingsvalg.
-          </p>
+          <button
+            type="submit"
+            disabled={
+              loading ||
+              shippingLoading ||
+              (deliveryMethod === 'Postsending' && !shippingReady)
+            }
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-[#ff5b24] px-4 py-3 font-bold text-white shadow transition duration-200 hover:bg-[#e04b18] disabled:cursor-not-allowed disabled:bg-gray-400"
+          >
+            {loading && <Loader2 className="h-5 w-5 animate-spin" />}
+            {loading
+              ? 'Behandler...'
+              : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
+          </button>
         </form>
       </div>
     </div>
