@@ -51,18 +51,23 @@ export async function GET() {
     ],
   };
 
-  const response = await fetch("https://api.bring.com/booking/api/create", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "X-Mybring-API-Uid": process.env.BRING_API_UID || "",
-      "X-Mybring-API-Key": process.env.BRING_API_KEY || "",
-      "X-Bring-Client-URL": process.env.BRING_CLIENT_URL || "https://www.eikbutikk.no",
-      "X-Bring-Test-Indicator": "true",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    "https://api.bring.com/booking/api/create",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Mybring-API-Uid": process.env.BRING_API_UID || "",
+        "X-Mybring-API-Key": process.env.BRING_API_KEY || "",
+        "X-Bring-Client-URL":
+          process.env.BRING_CLIENT_URL ||
+          "https://tilbudsboden.no",
+        "X-Bring-Test-Indicator": "true",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
 
   const text = await response.text();
 
