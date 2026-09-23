@@ -175,17 +175,17 @@ function ProductCard({
             )}
           </div>
 
-          <div className="border-t border-gray-100 pt-4">
+          <div className="-mt-1 border-t border-gray-100 pt-3">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">
               Velg betalingsmåte
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-[1.35fr_1fr] gap-3">
               <button
                 type="button"
                 onClick={() => onBuyWithVipps(product)}
                 disabled={isOutOfStock}
-                className="group flex min-h-[58px] transform items-center justify-center gap-2 rounded-xl bg-[#ff5b24] px-3 py-4 text-sm font-extrabold text-white shadow-lg ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-[#e94f1d] hover:shadow-xl active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+                className="group flex min-h-[60px] transform items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-4 py-4 text-base font-extrabold text-white shadow-[0_6px_18px_rgba(255,91,36,0.35)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-[#ff7a4d] hover:to-[#ed4d18] hover:shadow-[0_10px_24px_rgba(255,91,36,0.45)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
               >
                 <ShoppingBag className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
                 <span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}</span>
@@ -195,7 +195,7 @@ function ProductCard({
                 type="button"
                 onClick={onBuyWithKlarna}
                 disabled={isOutOfStock}
-                className="group flex min-h-[58px] transform items-center justify-center rounded-xl border-2 border-black bg-[#ffb3c7] px-3 py-4 text-sm font-extrabold text-black shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-[#ff9eb9] hover:shadow-xl active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+                className="flex min-h-[56px] transform items-center justify-center rounded-2xl border-2 border-[#ffb3c7] bg-white px-3 py-3.5 text-sm font-bold text-gray-900 shadow-[0_3px_10px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[#ff8fb0] hover:bg-[#fff0f5] hover:shadow-[0_5px_14px_rgba(255,179,199,0.28)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
               >
                 <span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Klarna'}</span>
               </button>
