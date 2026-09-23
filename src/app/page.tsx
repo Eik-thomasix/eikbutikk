@@ -137,10 +137,23 @@ export default function HomePage() {
       <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
       <section className="mx-auto w-full max-w-7xl px-4 pb-2 pt-4"><div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-neutral-900 shadow-md"><img src="/EiksenteretSortland.png" alt="Eiksenteret Sortland Butikk" className="max-h-[280px] w-full bg-neutral-900 object-contain" /><div className="absolute inset-0 flex items-center bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent p-6 md:p-10"><div className="max-w-xl text-white"><span className="mb-2 inline-block rounded bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">Velkommen til Tilbudsboden.no</span><h2 className="mb-2 text-xl font-extrabold tracking-tight text-white md:text-3xl">Restpartier, kampanjevarer og gode kjøp</h2><p className="hidden text-xs leading-relaxed text-gray-200 sm:block md:text-sm">Her finner du restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp direkte fra lageret og butikken vår på Sortland.</p></div></div></div></section>
       <section className="mx-auto w-full max-w-7xl px-4 pt-4">
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 shadow-sm md:grid-cols-4">
-          {['Alle priser inkl. mva.', 'Trygg betaling med Vipps', 'Henting eller levering', 'Fra Eiksenteret Sortland'].map((item) => (
-            <div key={item} className="flex min-h-14 items-center justify-center gap-2 bg-white px-3 py-3 text-center text-xs font-bold text-gray-800 sm:text-sm">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-700">✓</span>
+        <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:flex-row md:items-center md:justify-center">
+          {[
+            'Alt inkludert – ingen overraskelser',
+            'Rask levering eller hent i butikk',
+            'Lokal faghandel – Eiksenteret Sortland',
+          ].map((item, index) => (
+            <div
+              key={item}
+              className={`flex min-h-12 flex-1 items-center justify-start gap-2 px-4 py-3 text-sm font-bold text-gray-800 md:justify-center md:text-center ${
+                index > 0
+                  ? 'border-t border-gray-200 md:border-l md:border-t-0'
+                  : ''
+              }`}
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-700">
+                ✓
+              </span>
               <span>{item}</span>
             </div>
           ))}
