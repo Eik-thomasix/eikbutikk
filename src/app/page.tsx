@@ -80,16 +80,16 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, onBuyWithKlarna, 
             {stockInfo.icon}<span>{stockInfo.text}</span>
           </div>
 
-          <div className="mb-1 flex items-end gap-4">
+          <div className="mb-1 flex items-end gap-5">
             <span className="text-3xl font-black leading-none tracking-tight text-red-600">
               {product.salePrice.toLocaleString('no-NO')} kr
             </span>
             {product.listPrice > product.salePrice && (
-              <span className="flex flex-col pb-0.5 leading-tight text-gray-600">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              <span className="flex translate-y-[2px] flex-col self-end leading-none text-gray-600">
+                <span className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                   Veil. pris:
                 </span>
-                <span className="text-sm font-bold text-gray-700">
+                <span className="text-sm font-extrabold leading-none text-gray-800">
                   {product.listPrice.toLocaleString('no-NO')} kr
                 </span>
               </span>
@@ -102,17 +102,10 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, onBuyWithKlarna, 
               <button type="button" onClick={() => onBuyWithVipps(product)} disabled={isOutOfStock} className="group flex min-h-[60px] transform items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-4 py-4 text-base font-extrabold text-white shadow-[0_6px_18px_rgba(255,91,36,0.35)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_12px_28px_rgba(255,91,36,0.5)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
                 <ShoppingBag className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" /><span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}</span>
               </button>
-              <button type="button" onClick={onBuyWithKlarna} disabled={isOutOfStock} className="flex min-h-[56px] transform items-center justify-center rounded-2xl border-2 border-[#ff8fb0] bg-[#fff0f5] px-3 py-3.5 text-sm font-bold text-gray-900 shadow-[0_3px_10px_rgba(255,179,199,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[#ff6f9a] hover:bg-[#ffd6e5] hover:shadow-[0_7px_18px_rgba(255,111,154,0.38)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
-                {isOutOfStock ? (
-                  <span>Utsolgt</span>
-                ) : (
-                  <span className="flex flex-col items-center leading-tight">
-                    <span>Kjøp med Klarna</span>
-                    <span className="mt-0.5 text-[10px] font-semibold text-white/90">
-                      Betal senere
-                    </span>
-                  </span>
-                )}
+              <button type="button" onClick={onBuyWithKlarna} disabled={isOutOfStock} className="flex min-h-[56px] transform items-center justify-center rounded-2xl border-2 border-[#ff8fb0] bg-[#ffb3c7] px-3 py-3.5 text-sm font-extrabold leading-tight text-gray-950 shadow-[0_5px_14px_rgba(255,143,176,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[#ff5f8f] hover:bg-[#ff7fa6] hover:shadow-[0_9px_22px_rgba(255,95,143,0.42)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
+                <span>
+                  {isOutOfStock ? 'Utsolgt' : 'Betal senere med Klarna'}
+                </span>
               </button>
             </div>
           </div>
