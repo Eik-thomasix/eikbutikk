@@ -86,8 +86,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, onBuyWithKlarna, 
           </div>
           <p className="mb-2.5 text-xs font-medium text-gray-500">Inkl. mva.</p>
 
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium text-gray-400">Betal med</p>
+          <div className="pt-1">
             <div className="grid grid-cols-[1.35fr_1fr] gap-3">
               <button type="button" onClick={() => onBuyWithVipps(product)} disabled={isOutOfStock} className="group flex min-h-[60px] transform items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-4 py-4 text-base font-extrabold text-white shadow-[0_6px_18px_rgba(255,91,36,0.35)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-[#ff7a4d] hover:to-[#ed4d18] hover:shadow-[0_10px_24px_rgba(255,91,36,0.45)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100">
                 <ShoppingBag className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" /><span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}</span>
