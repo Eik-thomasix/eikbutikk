@@ -49,10 +49,9 @@ export default function CheckoutModal({
   const [address, setAddress] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [city, setCity] = useState('');
-  const [deliveryMethod, setDeliveryMethod] =
-    useState<DeliveryMethod>(
-      forcedPickup ? 'Henting i butikk' : 'Postsending'
-    );
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(
+    forcedPickup ? 'Henting i butikk' : 'Postsending'
+  );
   const [shippingPrice, setShippingPrice] = useState(0);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingReady, setShippingReady] = useState(forcedPickup);
@@ -63,6 +62,7 @@ export default function CheckoutModal({
   );
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [klarnaMessage, setKlarnaMessage] = useState('');
 
   const totalPrice = useMemo(
     () => product.salePrice + shippingPrice,
@@ -126,9 +126,7 @@ export default function CheckoutModal({
           | { success: false; message?: string };
 
         if (!response.ok || !data.success) {
-          throw new Error(
-            data.message || 'Kunne ikke beregne frakt.'
-          );
+          throw new Error(data.message || 'Kunne ikke beregne frakt.');
         }
 
         if (data.pickupOnly) {
@@ -175,6 +173,7 @@ export default function CheckoutModal({
   const handleVippsPayment = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage('');
+    setKlarnaMessage('');
 
     const normalizedPostalCode = postalCode.replace(/\D/g, '').slice(0, 4);
 
@@ -234,9 +233,7 @@ export default function CheckoutModal({
       }
 
       if (!data.url) {
-        throw new Error(
-          'Mottok ingen omdirigeringsadresse fra Vipps.'
-        );
+        throw new Error('Mottok ingen omdirigeringsadresse fra Vipps.');
       }
 
       window.location.href = data.url;
@@ -252,6 +249,13 @@ export default function CheckoutModal({
     }
   };
 
+  const handleKlarnaPreview = () => {
+    setErrorMessage('');
+    setKlarnaMessage(
+      'Klarna lanseres snart på Tilbudsboden.no. Knappen er foreløpig kun en forhåndsvisning.'
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
@@ -265,12 +269,8 @@ export default function CheckoutModal({
           ×
         </button>
 
-        <h2 className="pr-10 text-2xl font-bold text-gray-900">
-          Kasse
-        </h2>
-        <p className="mt-1 text-sm text-gray-600">
-          {product.name}
-        </p>
+        <h2 className="pr-10 text-2xl font-bold text-gray-900">Kasse</h2>
+        <p className="mt-1 text-sm text-gray-600">{product.name}</p>
 
         <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
           <div className="flex justify-between gap-4 py-1">
@@ -301,6 +301,15 @@ export default function CheckoutModal({
         {errorMessage && (
           <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
             {errorMessage}
+          </div>
+        )}
+
+        {klarnaMessage && (
+          <div
+            role="status"
+            className="mt-4 rounded-lg border border-[#ffb3c7] bg-[#fff0f5] p-3 text-sm font-medium text-gray-900"
+          >
+            {klarnaMessage}
           </div>
         )}
 
@@ -387,9 +396,7 @@ export default function CheckoutModal({
                   name="deliveryMethod"
                   value="Henting i butikk"
                   checked={deliveryMethod === 'Henting i butikk'}
-                  onChange={() =>
-                    setDeliveryMethod('Henting i butikk')
-                  }
+                  onChange={() => setDeliveryMethod('Henting i butikk')}
                 />
                 <MapPin className="h-5 w-5 text-red-600" />
                 <span className="text-sm font-semibold">
@@ -463,20 +470,36 @@ export default function CheckoutModal({
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={
-              loading ||
-              shippingLoading ||
-              (deliveryMethod === 'Postsending' && !shippingReady)
-            }
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-[#ff5b24] px-4 py-3 font-bold text-white shadow transition duration-200 hover:bg-[#e04b18] disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            {loading && <Loader2 className="h-5 w-5 animate-spin" />}
-            {loading
-              ? 'Behandler...'
-              : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
-          </button>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                shippingLoading ||
+                (deliveryMethod === 'Postsending' && !shippingReady)
+              }
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#ff5b24] px-4 py-3 font-bold text-white shadow transition duration-200 hover:bg-[#e04b18] disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              {loading && <Loader2 className="h-5 w-5 animate-spin" />}
+              {loading
+                ? 'Behandler...'
+                : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleKlarnaPreview}
+              disabled={loading}
+              className="flex w-full items-center justify-center rounded-md border border-black bg-[#ffb3c7] px-4 py-3 font-bold text-black shadow transition duration-200 hover:bg-[#ff9eb9] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Kjøp med Klarna
+            </button>
+          </div>
+
+          <p className="text-center text-xs text-gray-500">
+            Klarna er foreløpig ikke aktivert. Knappen viser kun planlagt
+            betalingsvalg.
+          </p>
         </form>
       </div>
     </div>
