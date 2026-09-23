@@ -153,10 +153,10 @@ export default function HomePage() {
           <img
             src="/EiksenteretSortland.png"
             alt="Eiksenteret Sortland Butikk"
-            className="h-full w-full object-cover object-center"
+            className="h-full w-full object-cover object-[center_65%]"
           />
-          <div className="absolute inset-0 flex items-center bg-gradient-to-r from-black/80 via-black/45 to-transparent p-6 md:p-10">
-            <div className="max-w-xl text-white">
+          <div className="absolute inset-0 flex items-center justify-end bg-gradient-to-l from-black/80 via-black/40 to-transparent p-6 md:p-10">
+            <div className="max-w-xl text-right text-white">
               <span className="mb-2 inline-block rounded bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
                 Velkommen til Tilbudsboden.no
               </span>
