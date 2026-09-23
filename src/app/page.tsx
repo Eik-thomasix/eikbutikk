@@ -175,25 +175,31 @@ function ProductCard({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => onBuyWithVipps(product)}
-              disabled={isOutOfStock}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[#ff5b24] px-2 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#e04b18] disabled:cursor-not-allowed disabled:bg-gray-400"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              {isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}
-            </button>
+          <div className="border-t border-gray-100 pt-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">
+              Velg betalingsmåte
+            </p>
 
-            <button
-              type="button"
-              onClick={onBuyWithKlarna}
-              disabled={isOutOfStock}
-              className="flex min-h-11 items-center justify-center rounded-lg border border-black bg-[#ffb3c7] px-2 py-2.5 text-sm font-bold text-black transition-colors hover:bg-[#ff9eb9] disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-300 disabled:text-gray-600"
-            >
-              {isOutOfStock ? 'Utsolgt' : 'Kjøp med Klarna'}
-            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => onBuyWithVipps(product)}
+                disabled={isOutOfStock}
+                className="group flex min-h-[58px] transform items-center justify-center gap-2 rounded-xl bg-[#ff5b24] px-3 py-4 text-sm font-extrabold text-white shadow-lg ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-[#e94f1d] hover:shadow-xl active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+              >
+                <ShoppingBag className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
+                <span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Vipps'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onBuyWithKlarna}
+                disabled={isOutOfStock}
+                className="group flex min-h-[58px] transform items-center justify-center rounded-xl border-2 border-black bg-[#ffb3c7] px-3 py-4 text-sm font-extrabold text-black shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-[#ff9eb9] hover:shadow-xl active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+              >
+                <span>{isOutOfStock ? 'Utsolgt' : 'Kjøp med Klarna'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
