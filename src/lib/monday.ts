@@ -193,12 +193,7 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
         const normalizedStatus = status.toLowerCase();
         const stock = parseNorwegianNumber(getColumnValue('Lager'));
 
-        const isActive =
-          !status ||
-          normalizedStatus === 'aktiv' ||
-          normalizedStatus === 'active' ||
-          normalizedStatus === 'ja' ||
-          normalizedStatus.includes('aktiv');
+        const isActive = normalizedStatus === 'aktiv';
 
         if (!isActive) return null;
 
