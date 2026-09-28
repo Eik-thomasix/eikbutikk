@@ -303,6 +303,7 @@ export default function ProductDetailPage() {
     product.listPrice - product.salePrice
   );
   const isOutOfStock = product.stock <= 0;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -333,6 +334,8 @@ export default function ProductDetailPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* VENSTRE: Bildegalleri */}
           <div className="lg:col-span-7 flex flex-col gap-4">
             <div className="w-full h-96 md:h-[480px] bg-gray-50 rounded-xl overflow-hidden relative border border-gray-100 p-4 flex items-center justify-center">
               <img
@@ -377,6 +380,7 @@ export default function ProductDetailPage() {
             )}
           </div>
 
+          {/* HØYRE: Produktdetaljer, Pris og Kjøp */}
           <div className="lg:col-span-5 flex flex-col justify-between">
             <div>
               <div className="text-xs font-semibold text-gray-400 mb-2">
@@ -416,28 +420,58 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 mb-5">
-                <div className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wide">
-                  Tilbudspris på nett
-                </div>
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-3xl md:text-4xl font-extrabold text-red-600">
-                    {product.salePrice.toLocaleString('no-NO')} kr
-                  </span>
-                  {product.listPrice > product.salePrice && (
-                    <span className="text-base text-gray-400 line-through">
-                      {product.listPrice.toLocaleString('no-NO')} kr
-                    </span>
-                  )}
-                </div>
-                {savings > 0 && (
-                  <div className="mt-2 inline-flex rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700">
-                    Du sparer {savings.toLocaleString('no-NO')} kr
+              {/* GRID: Pris til venstre – Vipps-knapp til høyre */}
+              <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 mb-5 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                
+                {/* Venstre side: Pris, veil.pris & lager status */}
+                <div className="sm:col-span-7 flex flex-col justify-center">
+                  <div className="text-[11px] text-gray-500 font-semibold uppercase tracking-wide mb-0.5">
+                    Tilbudspris på nett
                   </div>
-                )}
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-2xl md:text-3xl font-extrabold text-red-600">
+                      {product.salePrice.toLocaleString('no-NO')} kr
+                    </span>
+                    {product.listPrice > product.salePrice && (
+                      <span className="text-sm text-gray-400 line-through">
+                        {product.listPrice.toLocaleString('no-NO')} kr
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {savings > 0 && (
+                      <span className="inline-flex rounded-md bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                        Spar {savings.toLocaleString('no-NO')} kr
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold ${
+                      isOutOfStock
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-green-50 text-green-700 border border-green-200'
+                    }`}>
+                      <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                      {isOutOfStock ? 'Utsolgt' : `${product.stock} på lager`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Høyre side: Kjøp med Vipps-knappen */}
+                <div className="sm:col-span-5 flex flex-col justify-center">
+                  <button
+                    onClick={() => setShowCheckout(true)}
+                    disabled={product.stock <= 0}
+                    className="w-full bg-gradient-to-b from-[#ff7040] to-[#ff5b24] hover:from-[#ff8458] hover:to-[#e54812] disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-extrabold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-base text-center"
+                  >
+                    <ShoppingBag className="w-5 h-5 flex-shrink-0" />
+                    <span>{product.stock > 0 ? 'Kjøp med Vipps' : 'Utsolgt'}</span>
+                  </button>
+                </div>
+
               </div>
 
-              <div className="mb-5 grid gap-2 text-sm text-gray-700 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              {/* Ekstra trygghetsfordeler under */}
+              <div className="mb-5 grid gap-2 text-xs text-gray-700 grid-cols-2">
                 <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
                   <ShieldCheck className="h-4 w-4 flex-shrink-0 text-green-700" />
                   <span className="font-semibold">Trygg betaling med Vipps</span>
@@ -447,34 +481,11 @@ export default function ProductDetailPage() {
                   <span className="font-semibold">
                     {product.pickupOnly
                       ? 'Hentes på Sortland'
-                      : 'Frakt beregnes i kassen'}
-                  </span>
-                </div>
-                <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
-                  isOutOfStock
-                    ? 'border-red-200 bg-red-50 text-red-700'
-                    : 'border-green-200 bg-green-50 text-green-700'
-                }`}>
-                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                  <span className="font-semibold">
-                    {isOutOfStock
-                      ? 'Utsolgt'
-                      : `${product.stock} stk på lager`}
+                      : 'Post / Henting'}
                   </span>
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={() => setShowCheckout(true)}
-              disabled={product.stock <= 0}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-lg shadow-md hover:shadow-lg"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {product.stock > 0
-                ? 'Kjøp med Vipps nå'
-                : 'Utsolgt'}
-            </button>
           </div>
         </div>
 
