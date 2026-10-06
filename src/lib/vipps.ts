@@ -1,16 +1,61 @@
+export interface VippsAccessTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+function getVippsBaseUrl(): string {
+  const isTest = process.env.VIPPS_USE_TESTMODE === 'true';
+
+  return isTest
+    ? 'https://apitest.vipps.no'
+    : 'https://api.vipps.no';
+}
+
+export async function getVippsAccessToken(): Promise<string> {
+  const baseUrl = getVippsBaseUrl();
+
+  const clientId = process.env.VIPPS_CLIENT_ID;
+  const clientSecret = process.env.VIPPS_CLIENT_SECRET;
+  const subscriptionKey = process.env.VIPPS_SUBSCRIPTION_KEY;
+  const msn = process.env.VIPPS_MERCHANT_SERIAL_NUMBER;
+
+  if (!clientId || !clientSecret || !subscriptionKey || !msn) {
+    throw new Error('Mangler en eller flere Vipps API-nøkler i miljøvariablene.');
+  }
+
+  const response = await fetch(`${baseUrl}/accesstoken/get`, {
+    method: 'POST',
+    headers: {
+      client_id: clientId,
+      client_secret: clientSecret,
+      'Ocp-Apim-Subscription-Key': subscriptionKey,
+      'Merchant-Serial-Number': msn,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error('❌ Feil ved henting av Vipps access token:', data);
+    throw new Error(`Vipps Autentisering feilet: ${data.message || response.statusText}`);
+  }
+
+  return data.access_token;
+}
+
 export async function createVippsPaymentOrder(params: {
   orderId: string;
   amountInNok: number;
   productName: string;
   returnUrl: string;
-  customerPhone?: string; // Telefonnummer fra kassen
+  customerPhone?: string;
 }) {
   const baseUrl = getVippsBaseUrl();
   const token = await getVippsAccessToken();
 
   const amountInEre = Math.round(params.amountInNok * 100);
 
-  // Vasker telefonnummeret slik at det er i rent 8-sifret format uten +47 eller mellomrom
   const cleanPhone = params.customerPhone
     ? params.customerPhone.replace(/\D/g, '').slice(-8)
     : undefined;
@@ -29,7 +74,6 @@ export async function createVippsPaymentOrder(params: {
     paymentDescription: `Kjøp av ${params.productName.slice(0, 30)} på Tilbudsboden.no`,
   };
 
-  // Dersom telefonnummer er oppgitt i kassen, sender vi det til Vipps
   if (cleanPhone && cleanPhone.length === 8) {
     payload.phoneNumber = cleanPhone;
   }
@@ -59,4 +103,27 @@ export async function createVippsPaymentOrder(params: {
     url: data.redirectUrl,
     reference: data.reference,
   };
+}
+
+export async function getVippsPaymentStatus(reference: string) {
+  const baseUrl = getVippsBaseUrl();
+  const token = await getVippsAccessToken();
+
+  const response = await fetch(`${baseUrl}/epayment/v1/payments/${reference}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Ocp-Apim-Subscription-Key': process.env.VIPPS_SUBSCRIPTION_KEY || '',
+      'Merchant-Serial-Number': process.env.VIPPS_MERCHANT_SERIAL_NUMBER || '',
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error('❌ Henting av Vipps-status feilet:', JSON.stringify(data));
+    throw new Error(data.message || 'Kunne ikke hente betalingsstatus fra Vipps.');
+  }
+
+  return data;
 }
