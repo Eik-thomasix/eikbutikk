@@ -15,7 +15,6 @@ const ORDER_COLUMNS = {
   stockUpdated: 'boolean_mm73w05',
   processedDate: 'date_mm73p2e2',
   productJson: 'long_text_mm73r6vx',
-  // Kunde- og adressekolonner
   customerName: 'text_mm73x8e9',
   customerEmail: 'email_mm73y45r',
   customerPhone: 'phone_mm73k941',
@@ -449,7 +448,6 @@ export async function POST(request: NextRequest) {
     const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
     const customer = storedOrder.customer;
 
-    // Garantert at alle kundefelt skrives til Monday-kolonnene ved fullføring
     const updatePayload: Record<string, unknown> = {
       [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
       [ORDER_COLUMNS.vippsStatus]: { label: vippsLabel },
@@ -481,7 +479,6 @@ export async function POST(request: NextRequest) {
       mondayItemId: mondayOrder.id,
     });
 
-    // AUTOMATISK TRIGGER AV BRING BOOKING (Dersom Postsending er valgt)
     const deliveryMethod =
       storedOrder.customer.deliveryMethod ||
       storedOrder.shipping?.deliveryMethod;

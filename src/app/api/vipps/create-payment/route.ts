@@ -9,7 +9,6 @@ const ORDER_COLUMNS = {
   vippsStatus: 'color_mm73pqa6',
   stockUpdated: 'boolean_mm73w05',
   productJson: 'long_text_mm73r6vx',
-  // Kunde- og adressekolonner i Monday
   customerName: 'text_mm73x8e9',
   customerEmail: 'email_mm73y45r',
   customerPhone: 'phone_mm73k941',
@@ -102,7 +101,6 @@ async function createPendingOrderInMonday(params: {
     }
   `;
 
-  // Mappe alle verdier korrekt inkludert e-post, telefon og farge-status
   const columnValuesPayload: Record<string, unknown> = {
     [ORDER_COLUMNS.orderNumber]: orderId,
     [ORDER_COLUMNS.vippsOrderId]: orderId,

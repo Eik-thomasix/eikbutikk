@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, MapPin, Package, ShieldAlert, Wrench } from 'lucide-react';
+import { Loader2, MapPin, Package, ShieldAlert } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -87,7 +87,6 @@ export default function CheckoutModal({
       : ''
   );
   const [loading, setLoading] = useState(false);
-  const [testLoading, setTestLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const totalPrice = useMemo(
@@ -215,7 +214,7 @@ export default function CheckoutModal({
     }
 
     if (deliveryMethod === 'Postsending' && !shippingReady) {
-      return 'Frakt må være beregnet før bestillingen kan gjennomføres.';
+      return 'Frakt må være beregnet før betalingen kan startes.';
     }
 
     return null;
@@ -290,125 +289,13 @@ export default function CheckoutModal({
     }
   };
 
-  const handleDirectTestCheckout = async () => {
-    setErrorMessage('');
-
-    const validationError = validateInputs();
-    if (validationError) {
-      setErrorMessage(validationError);
-      return;
-    }
-
-    const normalizedPostalCode = postalCode.replace(/\D/g, '').slice(0, 4);
-    setTestLoading(true);
-
-    try {
-      const createRes = await fetch('/api/vipps/create-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product: {
-            ...product,
-            shippingPrice,
-            totalPrice,
-          },
-          customer: {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            address: address.trim(),
-            postalCode: normalizedPostalCode,
-            city: city.trim(),
-            deliveryMethod,
-          },
-          shipping: {
-            price: shippingPrice,
-            weight: product.weight,
-            deliveryMethod,
-          },
-        }),
-      });
-
-      const createData = await createRes.json();
-      if (!createRes.ok || !createData.success || !createData.orderId) {
-        throw new Error(createData.message || 'Kunne ikke opprette test-ordre i Monday.');
-      }
-
-      const orderId = createData.orderId;
-
-      const checkoutRes = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product: {
-            ...product,
-            shippingPrice,
-            totalPrice,
-          },
-          customer: {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            address: address.trim(),
-            postalCode: normalizedPostalCode,
-            city: city.trim(),
-            deliveryMethod,
-          },
-          orderId,
-        }),
-      });
-
-      const checkoutData = await checkoutRes.json();
-      if (!checkoutRes.ok || !checkoutData.success) {
-        throw new Error(checkoutData.message || 'Kunne ikke gjennomføre checkout/lagertrekk.');
-      }
-
-      if (deliveryMethod === 'Postsending') {
-        const bringRes = await fetch('/api/bring/test-shipment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId }),
-        });
-
-        const bringData = await bringRes.json();
-
-        if (!bringRes.ok || !bringData.success) {
-          // Vis eksakt feilmelding fra Bring dersom den finnes i responsen
-          const detailedError =
-            bringData?.details?.errors?.[0]?.messages?.[0]?.message ||
-            bringData?.details?.errors?.[0]?.code ||
-            bringData?.details?.message ||
-            bringData?.message ||
-            'Bring-booking feilet.';
-          
-          throw new Error(`Bring: ${detailedError}`);
-        }
-      }
-
-      if (onSuccess) {
-        await onSuccess();
-      }
-
-      window.location.href = `/ordre-bekreftet?ordrenr=${encodeURIComponent(orderId)}`;
-    } catch (error) {
-      console.error('Feil ved test-gjennomføring:', error);
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Det oppstod en feil under testen.'
-      );
-    } finally {
-      setTestLoading(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <button
           type="button"
           onClick={onClose}
-          disabled={loading || testLoading}
+          disabled={loading}
           aria-label="Lukk kassen"
           className="absolute right-4 top-4 text-xl text-gray-400 hover:text-gray-700 disabled:cursor-not-allowed"
         >
@@ -422,7 +309,7 @@ export default function CheckoutModal({
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
           <div>
             <span className="font-bold block text-orange-900">NBNB: Ekte betaling</span>
-            <span>Nettbutikken er i skarpt driftsmiljø. Ved ordinær gjennomføring blir beløpet belastet kontoen din.</span>
+            <span>Nettbutikken er i skarpt driftsmiljø. Ved gjennomføring blir du sendt til Vipps-appen og beløpet belastes kontoen din.</span>
           </div>
         </div>
 
@@ -619,7 +506,6 @@ export default function CheckoutModal({
             type="submit"
             disabled={
               loading ||
-              testLoading ||
               shippingLoading ||
               (deliveryMethod === 'Postsending' && !shippingReady)
             }
@@ -629,27 +515,6 @@ export default function CheckoutModal({
             {loading
               ? 'Behandler...'
               : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDirectTestCheckout}
-            disabled={
-              loading ||
-              testLoading ||
-              shippingLoading ||
-              (deliveryMethod === 'Postsending' && !shippingReady)
-            }
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-400 bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow transition duration-200 hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            {testLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Wrench className="h-4 w-4 text-amber-400" />
-            )}
-            {testLoading
-              ? 'Kjører Bring & Monday-test...'
-              : 'Test Bring & Monday (Uten Vipps)'}
           </button>
         </form>
       </div>
