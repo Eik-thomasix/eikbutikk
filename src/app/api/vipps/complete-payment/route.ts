@@ -458,6 +458,57 @@ export async function POST(request: NextRequest) {
       mondayItemId: mondayOrder.id,
     });
 
+    // -------------------------------------------------------------
+    // AUTOMATISK TRIGGER AV BRING BOOKING (Dersom Postsending er valgt)
+    // -------------------------------------------------------------
+    const deliveryMethod =
+      storedOrder.customer.deliveryMethod ||
+      storedOrder.shipping?.deliveryMethod;
+
+    if (deliveryMethod === 'Postsending') {
+      const adminSecret = process.env.BRING_ADMIN_SECRET?.trim();
+
+      if (adminSecret) {
+        try {
+          console.log(`Starter automatisk Bring-booking for ${reference}...`);
+          const bringResponse = await fetch(
+            `${getInternalBaseUrl(request)}/api/bring/create-shipment`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-admin-secret': adminSecret,
+              },
+              body: JSON.stringify({ orderId: reference }),
+              cache: 'no-store',
+            }
+          );
+
+          const bringResult = await bringResponse.json();
+          if (bringResponse.ok && bringResult.success) {
+            console.log(
+              ` Bring-booking fullført for ${reference}:`,
+              bringResult
+            );
+          } else {
+            console.error(
+              ` Bring-booking feilet for ${reference}:`,
+              bringResult
+            );
+          }
+        } catch (bringErr) {
+          console.error(
+            ` Unntak ved automatisk Bring-booking for ${reference}:`,
+            bringErr
+          );
+        }
+      } else {
+        console.warn(
+          ' BRING_ADMIN_SECRET mangler i miljøvariablene. Bring-booking ble ikke trigget automatisk.'
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
       verified: true,
