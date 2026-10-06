@@ -76,14 +76,13 @@ async function createPendingOrderInMonday(params: {
     }
   `;
 
-  const columnValues = JSON.stringify({
-    [ORDER_COLUMNS.orderNumber]: orderId,
-    [ORDER_COLUMNS.vippsOrderId]: orderId,
-    [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
-    [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
-    [ORDER_COLUMNS.vippsStatus]: { label: 'Initiert' },
-    [ORDER_COLUMNS.productJson]: productJson,
-  });
+const columnValues = JSON.stringify({
+  [ORDER_COLUMNS.orderNumber]: orderId,
+  [ORDER_COLUMNS.vippsOrderId]: orderId,
+  [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
+  [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
+  [ORDER_COLUMNS.productJson]: productJson,
+});
 
   await mondayRequest(apiKey, mutation, {
     boardId,
