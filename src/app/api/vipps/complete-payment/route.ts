@@ -15,6 +15,14 @@ const ORDER_COLUMNS = {
   stockUpdated: 'boolean_mm73w05',
   processedDate: 'date_mm73p2e2',
   productJson: 'long_text_mm73r6vx',
+  // Kunde- og adressekolonner
+  customerName: 'text_mm73x8e9',
+  customerEmail: 'email_mm73y45r',
+  customerPhone: 'phone_mm73k941',
+  customerAddress: 'text_mm73m33l',
+  customerPostalCode: 'text_mm73p89n',
+  customerCity: 'text_mm73z69p',
+  deliveryMethod: 'color_mm73w78m',
 } as const;
 
 const VERIFIED_STATES = new Set(['AUTHORIZED', 'CAPTURED']);
@@ -41,6 +49,9 @@ interface StoredOrderData {
     name: string;
     email: string;
     phone: string;
+    address?: string;
+    postalCode?: string;
+    city?: string;
     deliveryMethod?: string;
   };
   shipping?: {
@@ -436,31 +447,41 @@ export async function POST(request: NextRequest) {
     }
 
     const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
+    const customer = storedOrder.customer;
+
+    // Garantert at alle kundefelt skrives til Monday-kolonnene ved fullføring
+    const updatePayload: Record<string, unknown> = {
+      [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
+      [ORDER_COLUMNS.vippsStatus]: { label: vippsLabel },
+      [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
+      [ORDER_COLUMNS.stockUpdated]: { checked: 'true' },
+      [ORDER_COLUMNS.processedDate]: { date: norwegianDate() },
+    };
+
+    if (customer.name) updatePayload[ORDER_COLUMNS.customerName] = customer.name;
+    if (customer.email) updatePayload[ORDER_COLUMNS.customerEmail] = { email: customer.email, text: customer.email };
+    if (customer.phone) updatePayload[ORDER_COLUMNS.customerPhone] = { phone: customer.phone, countryShortName: 'NO' };
+    if (customer.address) updatePayload[ORDER_COLUMNS.customerAddress] = customer.address;
+    if (customer.postalCode) updatePayload[ORDER_COLUMNS.customerPostalCode] = customer.postalCode;
+    if (customer.city) updatePayload[ORDER_COLUMNS.customerCity] = customer.city;
+    if (customer.deliveryMethod) updatePayload[ORDER_COLUMNS.deliveryMethod] = { label: customer.deliveryMethod };
 
     await updateMondayOrder({
       apiKey: mondayApiKey,
       boardId: orderBoardId,
       itemId: mondayOrder.id,
       groupId: ORDER_GROUPS.processing,
-      columnValues: {
-        [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
-        [ORDER_COLUMNS.vippsStatus]: { label: vippsLabel },
-        [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
-        [ORDER_COLUMNS.stockUpdated]: { checked: 'true' },
-        [ORDER_COLUMNS.processedDate]: { date: norwegianDate() },
-      },
+      columnValues: updatePayload,
     });
 
-    console.log('Vipps-ordre fullført med frakt:', {
+    console.log('Vipps-ordre fullført med frakt og oppdatert i Monday:', {
       reference,
       state,
       expectedTotal,
       mondayItemId: mondayOrder.id,
     });
 
-    // -------------------------------------------------------------
     // AUTOMATISK TRIGGER AV BRING BOOKING (Dersom Postsending er valgt)
-    // -------------------------------------------------------------
     const deliveryMethod =
       storedOrder.customer.deliveryMethod ||
       storedOrder.shipping?.deliveryMethod;
@@ -487,24 +508,24 @@ export async function POST(request: NextRequest) {
           const bringResult = await bringResponse.json();
           if (bringResponse.ok && bringResult.success) {
             console.log(
-              ` Bring-booking fullført for ${reference}:`,
+              `Bring-booking fullført for ${reference}:`,
               bringResult
             );
           } else {
             console.error(
-              ` Bring-booking feilet for ${reference}:`,
+              `Bring-booking feilet for ${reference}:`,
               bringResult
             );
           }
         } catch (bringErr) {
           console.error(
-            ` Unntak ved automatisk Bring-booking for ${reference}:`,
+            `Unntak ved automatisk Bring-booking for ${reference}:`,
             bringErr
           );
         }
       } else {
         console.warn(
-          ' BRING_ADMIN_SECRET mangler i miljøvariablene. Bring-booking ble ikke trigget automatisk.'
+          'BRING_ADMIN_SECRET mangler i miljøvariablene. Bring-booking ble ikke trigget automatisk.'
         );
       }
     }

@@ -10,7 +10,7 @@ const ORDER_COLUMNS = {
   stockUpdated: 'boolean_mm73w05',
   productJson: 'long_text_mm73r6vx',
   // Kunde- og adressekolonner i Monday
-  customerName: 'text_mm73x8e9', 
+  customerName: 'text_mm73x8e9',
   customerEmail: 'email_mm73y45r',
   customerPhone: 'phone_mm73k941',
   customerAddress: 'text_mm73m33l',
@@ -102,7 +102,7 @@ async function createPendingOrderInMonday(params: {
     }
   `;
 
-  // Mappe alle verdier til rett kolonne i Monday
+  // Mappe alle verdier korrekt inkludert e-post, telefon og farge-status
   const columnValuesPayload: Record<string, unknown> = {
     [ORDER_COLUMNS.orderNumber]: orderId,
     [ORDER_COLUMNS.vippsOrderId]: orderId,
@@ -111,14 +111,16 @@ async function createPendingOrderInMonday(params: {
     [ORDER_COLUMNS.productJson]: productJson,
   };
 
-  // Valgfrie felter legges inn dersom kolonne-ID-ene matcher eller kan settes som tekst
   if (customerName) columnValuesPayload[ORDER_COLUMNS.customerName] = customerName;
+  if (customerEmail) columnValuesPayload[ORDER_COLUMNS.customerEmail] = { email: customerEmail, text: customerEmail };
+  if (customerPhone) columnValuesPayload[ORDER_COLUMNS.customerPhone] = { phone: customerPhone, countryShortName: 'NO' };
   if (customerAddress) columnValuesPayload[ORDER_COLUMNS.customerAddress] = customerAddress;
   if (customerPostalCode) columnValuesPayload[ORDER_COLUMNS.customerPostalCode] = customerPostalCode;
   if (customerCity) columnValuesPayload[ORDER_COLUMNS.customerCity] = customerCity;
+  if (deliveryMethod) columnValuesPayload[ORDER_COLUMNS.deliveryMethod] = { label: deliveryMethod };
   if (productName) columnValuesPayload[ORDER_COLUMNS.productName] = productName;
-  if (salePrice) columnValuesPayload[ORDER_COLUMNS.netPrice] = salePrice;
-  if (shippingPrice) columnValuesPayload[ORDER_COLUMNS.shippingPrice] = shippingPrice;
+  if (salePrice) columnValuesPayload[ORDER_COLUMNS.netPrice] = String(salePrice);
+  if (shippingPrice) columnValuesPayload[ORDER_COLUMNS.shippingPrice] = String(shippingPrice);
 
   await mondayRequest(apiKey, mutation, {
     boardId,
