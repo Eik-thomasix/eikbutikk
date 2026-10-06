@@ -35,6 +35,33 @@ function formatPrice(value: number): string {
   return value.toLocaleString('no-NO');
 }
 
+// Hjelpefunksjon for å hente poststed direkte fra Bring
+async function fetchCityFromPostalCode(postalCode: string, signal?: AbortSignal): Promise<string> {
+  const cleanCode = postalCode.replace(/\D/g, '');
+  if (cleanCode.length !== 4) return '';
+
+  try {
+    const res = await fetch(
+      `https://api.bring.com/shippingguide/api/postalCode.json?pnr=${cleanCode}`,
+      { signal }
+    );
+
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (data.result && typeof data.result === 'string') {
+      return data.result;
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return '';
+    }
+    console.warn('Kunne ikke slå opp poststed fra Bring:', error);
+  }
+
+  return '';
+}
+
 export default function CheckoutModal({
   isOpen = true,
   onClose,
@@ -79,6 +106,7 @@ export default function CheckoutModal({
     }
   }, [forcedPickup]);
 
+  // Effekt for automatisk oppslag av poststed og beregning av frakt
   useEffect(() => {
     if (deliveryMethod === 'Henting i butikk') {
       setShippingPrice(0);
@@ -103,28 +131,36 @@ export default function CheckoutModal({
     const timeout = window.setTimeout(async () => {
       setShippingLoading(true);
       setShippingReady(false);
-      setShippingMessage('Beregner frakt...');
+      setShippingMessage('Beregner frakt og finner poststed...');
 
       try {
-        const response = await fetch('/api/shipping/calculate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            weight: product.weight,
-            pickupOnly: product.pickupOnly,
-            postalCode: normalizedPostalCode,
+        // Henter poststed og fraktberegning samtidig
+        const [fetchedCity, shippingRes] = await Promise.all([
+          fetchCityFromPostalCode(normalizedPostalCode, controller.signal),
+          fetch('/api/shipping/calculate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              weight: product.weight,
+              pickupOnly: product.pickupOnly,
+              postalCode: normalizedPostalCode,
+            }),
+            signal: controller.signal,
+            cache: 'no-store',
           }),
-          signal: controller.signal,
-          cache: 'no-store',
-        });
+        ]);
 
-        const data = (await response.json()) as
+        if (fetchedCity) {
+          setCity(fetchedCity);
+        }
+
+        const data = (await shippingRes.json()) as
           | ({ success: true } & ShippingResult)
           | { success: false; message?: string };
 
-        if (!response.ok || !data.success) {
+        if (!shippingRes.ok || !data.success) {
           throw new Error(data.message || 'Kunne ikke beregne frakt.');
         }
 
@@ -154,7 +190,7 @@ export default function CheckoutModal({
       } finally {
         setShippingLoading(false);
       }
-    }, 400);
+    }, 300);
 
     return () => {
       window.clearTimeout(timeout);
