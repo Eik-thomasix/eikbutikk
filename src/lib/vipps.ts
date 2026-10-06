@@ -56,15 +56,10 @@ export async function createVippsPaymentOrder(params: {
 
   const amountInEre = Math.round(params.amountInNok * 100);
 
-  // Vasker nummeret og sørger for riktig landskode (f.eks. 4748110889)
-  let formattedPhone: string | undefined = undefined;
-  if (params.customerPhone) {
-    const digitsOnly = params.customerPhone.replace(/\D/g, '');
-    if (digitsOnly.length === 8) {
-      formattedPhone = `47${digitsOnly}`;
-    } else if (digitsOnly.length === 10 && digitsOnly.startsWith('47')) {
-      formattedPhone = digitsOnly;
-    }
+  // Vasker nummeret og lager sifferstreng med landskode (47XXXXXXXX)
+  let digitsOnly = params.customerPhone ? params.customerPhone.replace(/\D/g, '') : '';
+  if (digitsOnly.length === 8) {
+    digitsOnly = `47${digitsOnly}`;
   }
 
   const payload: Record<string, unknown> = {
@@ -81,10 +76,14 @@ export async function createVippsPaymentOrder(params: {
     paymentDescription: `Kjøp av ${params.productName.slice(0, 30)} på Tilbudsboden.no`,
   };
 
-  // Legger telefonnummeret inn under profile.phoneNumber i henhold til Vipps ePayment-spesifikasjonen
-  if (formattedPhone) {
+  if (digitsOnly.length === 10) {
+    // Sendes i alle formater Vipps støtter for web-redirect
+    payload.phoneNumber = digitsOnly;
+    payload.customer = {
+      phoneNumber: digitsOnly,
+    };
     payload.profile = {
-      phoneNumber: formattedPhone,
+      phoneNumber: digitsOnly,
     };
   }
 
