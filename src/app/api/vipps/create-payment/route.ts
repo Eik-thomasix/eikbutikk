@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createVippsPaymentOrder } from '@/lib/vipps';
 
 const ORDER_GROUPS = {
-  pending: 'group_mm7317nf', // Eller gruppen for ubehandlede/ventende ordrer
+  pending: 'group_mm7317nf',
 } as const;
 
 const ORDER_COLUMNS = {
@@ -17,11 +17,6 @@ const ORDER_COLUMNS = {
 
 function getInternalBaseUrl(request: NextRequest): string {
   return request.nextUrl.origin.replace(/\/+$/, '');
-}
-
-function cleanPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  return digits.slice(-8);
 }
 
 async function mondayRequest(
@@ -76,13 +71,14 @@ async function createPendingOrderInMonday(params: {
     }
   `;
 
-const columnValues = JSON.stringify({
-  [ORDER_COLUMNS.orderNumber]: orderId,
-  [ORDER_COLUMNS.vippsOrderId]: orderId,
-  [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
-  [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
-  [ORDER_COLUMNS.productJson]: productJson,
-});
+  // Setter gyldige merkelapper i Monday (og utelater vippsStatus til betalingen er bekreftet)
+  const columnValues = JSON.stringify({
+    [ORDER_COLUMNS.orderNumber]: orderId,
+    [ORDER_COLUMNS.vippsOrderId]: orderId,
+    [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
+    [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
+    [ORDER_COLUMNS.productJson]: productJson,
+  });
 
   await mondayRequest(apiKey, mutation, {
     boardId,
@@ -170,13 +166,13 @@ export async function POST(request: NextRequest) {
     const baseUrl = getInternalBaseUrl(request);
     const returnUrl = `${baseUrl}/api/vipps/verify-payment?reference=${orderId}`;
 
-    // 2. Opprett betalingen hos Vipps og send med telefonnummeret
+    // 2. Opprett betalingen hos Vipps og overfør hele telefonnummeret
     const vippsPayment = await createVippsPaymentOrder({
       orderId,
       amountInNok: totalPrice,
       productName: product.name,
       returnUrl,
-      customerPhone: cleanPhone(customer.phone), // <--- Fyller ut nummeret hos Vipps
+      customerPhone: customer.phone,
     });
 
     return NextResponse.json({
