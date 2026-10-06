@@ -361,6 +361,9 @@ export async function POST(request: NextRequest) {
       storedOrder.product.id
     );
 
+    // Maksimalt 35 tegn for goodsDescription i Bring API
+    const safeGoodsDescription = (storedOrder.product.name || 'Vare').slice(0, 35);
+
     const correlationId = `${orderId}-${Date.now()}`;
     const payload = {
       schemaVersion: 1,
@@ -403,7 +406,7 @@ export async function POST(request: NextRequest) {
           packages: [
             {
               weightInKg: packageData.weightInKg,
-              goodsDescription: storedOrder.product.name,
+              goodsDescription: safeGoodsDescription,
               dimensions: {
                 heightInCm: packageData.heightInCm,
                 widthInCm: packageData.widthInCm,
