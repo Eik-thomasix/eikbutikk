@@ -91,13 +91,14 @@ async function markOrderAsPaidInMonday(apiKey: string, boardId: string, orderId:
     }
   `;
 
+  // Bruker 'Autorisert' som er en gyldig label i Monday
   await mondayRequest(apiKey, updateMutation, {
     boardId,
     itemId,
     columnValues: JSON.stringify({
       [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
       [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
-      [ORDER_COLUMNS.vippsStatus]: { label: 'Test' },
+      [ORDER_COLUMNS.vippsStatus]: { label: 'Autorisert' },
     }),
   });
 }
@@ -125,10 +126,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Markér ordren som Betalt i Monday først
+    // 1. Markér ordren som Betalt med gyldig statuslabel i Monday
     await markOrderAsPaidInMonday(mondayApiKey, orderBoardId, orderId);
 
-    // 2. Kall ordinær Bring-booking
+    // 2. Kalle den ordinære Bring-bookingen
     const baseUrl = getInternalBaseUrl(request);
     const response = await fetch(`${baseUrl}/api/bring/create-shipment`, {
       method: 'POST',

@@ -35,7 +35,6 @@ function formatPrice(value: number): string {
   return value.toLocaleString('no-NO');
 }
 
-// Hjelpefunksjon for å hente poststed direkte fra Bring
 async function fetchCityFromPostalCode(postalCode: string, signal?: AbortSignal): Promise<string> {
   const cleanCode = postalCode.replace(/\D/g, '');
   if (cleanCode.length !== 4) return '';
@@ -107,7 +106,6 @@ export default function CheckoutModal({
     }
   }, [forcedPickup]);
 
-  // Effekt for automatisk oppslag av poststed og beregning av frakt
   useEffect(() => {
     if (deliveryMethod === 'Henting i butikk') {
       setShippingPrice(0);
@@ -223,7 +221,6 @@ export default function CheckoutModal({
     return null;
   };
 
-  // 1. Ekte Vipps-betaling
   const handleVippsPayment = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage('');
@@ -293,7 +290,6 @@ export default function CheckoutModal({
     }
   };
 
-  // 2. Simulert test-gjennomføring uten Vipps
   const handleDirectTestCheckout = async () => {
     setErrorMessage('');
 
@@ -307,8 +303,6 @@ export default function CheckoutModal({
     setTestLoading(true);
 
     try {
-      // Step A: Opprett ordre i Monday
-      console.log('Oppretter test-ordre i Monday...');
       const createRes = await fetch('/api/vipps/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -341,10 +335,7 @@ export default function CheckoutModal({
       }
 
       const orderId = createData.orderId;
-      console.log('Test-ordre opprettet i Monday med ID:', orderId);
 
-      // Step B: Kjører checkout for lagertrekk og e-postvarsling
-      console.log('Kjører checkout (e-post og lagertrekk)...');
       const checkoutRes = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -372,9 +363,7 @@ export default function CheckoutModal({
         throw new Error(checkoutData.message || 'Kunne ikke gjennomføre checkout/lagertrekk.');
       }
 
-      // Step C: Trigger Bring-booking via /api/bring/test-shipment
       if (deliveryMethod === 'Postsending') {
-        console.log('Kaller Bring test-shipment...');
         const bringRes = await fetch('/api/bring/test-shipment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -382,7 +371,6 @@ export default function CheckoutModal({
         });
 
         const bringData = await bringRes.json();
-        console.log('Svar fra Bring test-shipment:', bringData);
 
         if (!bringRes.ok || !bringData.success) {
           throw new Error(bringData.message || 'Bring-booking feilet.');
@@ -393,7 +381,6 @@ export default function CheckoutModal({
         await onSuccess();
       }
 
-      // Omdiriger til bekreftelsessiden når alt er fullført
       window.location.href = `/ordre-bekreftet?ordrenr=${encodeURIComponent(orderId)}`;
     } catch (error) {
       console.error('Feil ved test-gjennomføring:', error);
@@ -423,7 +410,6 @@ export default function CheckoutModal({
         <h2 className="pr-10 text-2xl font-bold text-gray-900">Kasse</h2>
         <p className="mt-1 text-sm text-gray-600">{product.name}</p>
 
-        {/* Advarsel om at Vipps er i skarpt driftsmiljø */}
         <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-orange-300 bg-orange-50 p-3.5 text-xs text-orange-950 shadow-sm">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
           <div>
@@ -621,7 +607,6 @@ export default function CheckoutModal({
             </div>
           )}
 
-          {/* Hovedknapp: Vipps */}
           <button
             type="submit"
             disabled={
@@ -638,7 +623,6 @@ export default function CheckoutModal({
               : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
           </button>
 
-          {/* TESTKNAPP: Kjører Bring + Monday via /api/bring/test-shipment */}
           <button
             type="button"
             onClick={handleDirectTestCheckout}
