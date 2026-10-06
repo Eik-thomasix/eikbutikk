@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, MapPin, Package, ShieldAlert } from 'lucide-react';
+import { Loader2, MapPin, Package, ShieldAlert, Wrench } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -88,6 +88,7 @@ export default function CheckoutModal({
       : ''
   );
   const [loading, setLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const totalPrice = useMemo(
@@ -134,7 +135,6 @@ export default function CheckoutModal({
       setShippingMessage('Beregner frakt og finner poststed...');
 
       try {
-        // Henter poststed og fraktberegning samtidig
         const [fetchedCity, shippingRes] = await Promise.all([
           fetchCityFromPostalCode(normalizedPostalCode, controller.signal),
           fetch('/api/shipping/calculate', {
@@ -205,32 +205,42 @@ export default function CheckoutModal({
 
   if (!isOpen) return null;
 
+  const validateInputs = (): string | null => {
+    const normalizedPostalCode = postalCode.replace(/\D/g, '').slice(0, 4);
+
+    if (!name.trim() || !email.trim() || !phone.trim() || !address.trim()) {
+      return 'Vennligst fyll ut alle feltene i kassen.';
+    }
+
+    if (normalizedPostalCode.length !== 4) {
+      return 'Postnummer må bestå av fire sifre.';
+    }
+
+    if (deliveryMethod === 'Postsending' && !shippingReady) {
+      return 'Frakt må være beregnet før bestillingen kan gjennomføres.';
+    }
+
+    return null;
+  };
+
+  // 1. Ekte Vipps-betaling
   const handleVippsPayment = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage('');
 
+    const validationError = validateInputs();
+    if (validationError) {
+      setErrorMessage(validationError);
+      return;
+    }
+
     const normalizedPostalCode = postalCode.replace(/\D/g, '').slice(0, 4);
-
-    if (normalizedPostalCode.length !== 4) {
-      setErrorMessage('Postnummer må bestå av fire sifre.');
-      return;
-    }
-
-    if (deliveryMethod === 'Postsending' && !shippingReady) {
-      setErrorMessage(
-        'Frakt må være beregnet før betalingen kan startes.'
-      );
-      return;
-    }
-
     setLoading(true);
 
     try {
       const response = await fetch('/api/vipps/create-payment', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           product: {
             ...product,
@@ -283,13 +293,93 @@ export default function CheckoutModal({
     }
   };
 
+  // 2. Simulert test-gjennomføring uten Vipps (For Bring & Monday test)
+  const handleDirectTestCheckout = async () => {
+    setErrorMessage('');
+
+    const validationError = validateInputs();
+    if (validationError) {
+      setErrorMessage(validationError);
+      return;
+    }
+
+    const normalizedPostalCode = postalCode.replace(/\D/g, '').slice(0, 4);
+    setTestLoading(true);
+
+    try {
+      // Step A: Opprett ordre i Monday
+      const createRes = await fetch('/api/vipps/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product: {
+            ...product,
+            shippingPrice,
+            totalPrice,
+          },
+          customer: {
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            postalCode: normalizedPostalCode,
+            city: city.trim(),
+            deliveryMethod,
+          },
+          shipping: {
+            price: shippingPrice,
+            weight: product.weight,
+            deliveryMethod,
+          },
+        }),
+      });
+
+      const createData = await createRes.json();
+      if (!createRes.ok || !createData.success || !createData.orderId) {
+        throw new Error(createData.message || 'Kunne ikke opprette test-ordre i Monday.');
+      }
+
+      const orderId = createData.orderId;
+
+      // Step B: Kjell ferdigstillings-APIet som om Vipps var "AUTHORIZED"
+      const completeRes = await fetch('/api/vipps/complete-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: orderId,
+        }),
+      });
+
+      const completeData = await completeRes.json();
+      if (!completeRes.ok || !completeData.success) {
+        throw new Error(completeData.message || 'Kunne ikke verifisere test-ordren.');
+      }
+
+      if (onSuccess) {
+        await onSuccess();
+      }
+
+      // Omdiriger til bekreftelsessiden
+      window.location.href = `/ordre-bekreftet?ordrenr=${encodeURIComponent(orderId)}`;
+    } catch (error) {
+      console.error('Feil ved test-gjennomføring:', error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Det oppstod en feil under testen.'
+      );
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <button
           type="button"
           onClick={onClose}
-          disabled={loading}
+          disabled={loading || testLoading}
           aria-label="Lukk kassen"
           className="absolute right-4 top-4 text-xl text-gray-400 hover:text-gray-700 disabled:cursor-not-allowed"
         >
@@ -304,7 +394,7 @@ export default function CheckoutModal({
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
           <div>
             <span className="font-bold block text-orange-900">NBNB: Ekte betaling</span>
-            <span>Nettbutikken er i skarpt driftsmiljø. Ved gjennomføring blir du sendt til Vipps-appen og beløpet belastes kontoen din.</span>
+            <span>Nettbutikken er i skarpt driftsmiljø. Ved ordinær gjennomføring blir beløpet belastet kontoen din.</span>
           </div>
         </div>
 
@@ -497,10 +587,12 @@ export default function CheckoutModal({
             </div>
           )}
 
+          {/* Hovedknapp: Vipps */}
           <button
             type="submit"
             disabled={
               loading ||
+              testLoading ||
               shippingLoading ||
               (deliveryMethod === 'Postsending' && !shippingReady)
             }
@@ -510,6 +602,28 @@ export default function CheckoutModal({
             {loading
               ? 'Behandler...'
               : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
+          </button>
+
+          {/* TESTKNAPP: Kjører Bring + Monday uten Vipps-omdirigering */}
+          <button
+            type="button"
+            onClick={handleDirectTestCheckout}
+            disabled={
+              loading ||
+              testLoading ||
+              shippingLoading ||
+              (deliveryMethod === 'Postsending' && !shippingReady)
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-400 bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow transition duration-200 hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-400"
+          >
+            {testLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Wrench className="h-4 w-4 text-amber-400" />
+            )}
+            {testLoading
+              ? 'Kjører Bring & Monday-test...'
+              : 'Test Bring & Monday (Uten Vipps)'}
           </button>
         </form>
       </div>
