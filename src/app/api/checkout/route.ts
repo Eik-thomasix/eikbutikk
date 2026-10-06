@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
 
-// Heads-up til butikken
+// Heads-up til butikken og mottaker for kundesvar
 const STORE_EMAIL_ADDRESS = 'sortland@eiksenteret.com';
 
 interface CheckoutProduct {
@@ -154,6 +154,7 @@ async function sendOrderEmails(params: {
   const customerResult = await resend.emails.send({
     from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
     to: [customer.email],
+    replyTo: STORE_EMAIL_ADDRESS,
     subject: `Ordrebekreftelse ${safe.orderReference} · ${product.name}`,
     html: customerEmailHtml,
   });
@@ -161,6 +162,7 @@ async function sendOrderEmails(params: {
   const storeResult = await resend.emails.send({
     from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
     to: [STORE_EMAIL_ADDRESS],
+    replyTo: customer.email,
     subject: `Ny ordre ${safe.orderReference} · ${product.itemNumber || product.name}`,
     html: storeEmailHtml,
   });
