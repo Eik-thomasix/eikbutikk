@@ -3,8 +3,8 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
 
-// TESTMODUS: Både kunde- og butikkmail sendes hit.
-const TEST_EMAIL_ADDRESS = 'thomasix@gmail.com';
+// Heads-up til butikken
+const STORE_EMAIL_ADDRESS = 'sortland@eiksenteret.com';
 
 interface CheckoutProduct {
   id: string;
@@ -110,11 +110,7 @@ async function sendOrderEmails(params: {
           <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:#4b5563;">
             Spørsmål om bestillingen?<br>
             Eiksenteret Sortland, Verkstedveien 2, 8402 Sortland<br>
-            Telefon: 76 12 13 60 · <a href="mailto:sortland@eiksenteret.no" style="color:#d71920;">sortland@eiksenteret.no</a>
-          </p>
-
-          <p style="margin:18px 0 0;font-size:11px;color:#9ca3af;">
-            Testmodus: Denne kundekopien ble sendt til ${TEST_EMAIL_ADDRESS}. Kundens registrerte e-post er ${safe.customerEmail}.
+            Telefon: 76 12 13 60 · <a href="mailto:sortland@eiksenteret.com" style="color:#d71920;">sortland@eiksenteret.com</a>
           </p>
         </div>
       </div>
@@ -156,16 +152,16 @@ async function sendOrderEmails(params: {
   `;
 
   const customerResult = await resend.emails.send({
-    from: 'Eiksenteret Sortland <onboarding@resend.dev>',
-    to: [TEST_EMAIL_ADDRESS],
-    subject: `[TEST KUNDE] Ordrebekreftelse ${safe.orderReference} · ${product.name}`,
+    from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
+    to: [customer.email],
+    subject: `Ordrebekreftelse ${safe.orderReference} · ${product.name}`,
     html: customerEmailHtml,
   });
 
   const storeResult = await resend.emails.send({
-    from: 'Tilbudsboden.no <onboarding@resend.dev>',
-    to: [TEST_EMAIL_ADDRESS],
-    subject: `[TEST BUTIKK] Ny ordre ${safe.orderReference} · ${product.itemNumber || product.name}`,
+    from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
+    to: [STORE_EMAIL_ADDRESS],
+    subject: `Ny ordre ${safe.orderReference} · ${product.itemNumber || product.name}`,
     html: storeEmailHtml,
   });
 
@@ -323,8 +319,6 @@ export async function POST(request: Request) {
       payment?.reference || body?.orderId || 'Ukjent ordrenummer'
     );
 
-    // Lager oppdateres først. Hvis lageroppdateringen feiler, rapporteres ikke
-    // checkout som fullført til complete-payment-ruten.
     await updateMondayStock(product);
 
     if (process.env.RESEND_API_KEY) {
@@ -337,9 +331,8 @@ export async function POST(request: Request) {
           shippingPrice,
           totalPrice,
         });
-        console.log('Test-e-poster sendt til:', TEST_EMAIL_ADDRESS);
+        console.log('E-post sendt til kunden:', customer.email);
       } catch (emailError) {
-        // E-postfeil skal logges, men skal ikke føre til nytt lagertrekk ved retry.
         console.error('Kunne ikke sende e-post via Resend:', emailError);
       }
     } else {
@@ -351,7 +344,7 @@ export async function POST(request: Request) {
       productPrice,
       shippingPrice,
       totalPrice,
-      testEmailRecipient: TEST_EMAIL_ADDRESS,
+      customerEmail: customer.email,
     });
   } catch (error) {
     console.error('Kritisk feil ved behandling av ordre:', error);
