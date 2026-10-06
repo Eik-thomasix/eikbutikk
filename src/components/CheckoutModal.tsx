@@ -373,7 +373,15 @@ export default function CheckoutModal({
         const bringData = await bringRes.json();
 
         if (!bringRes.ok || !bringData.success) {
-          throw new Error(bringData.message || 'Bring-booking feilet.');
+          // Vis eksakt feilmelding fra Bring dersom den finnes i responsen
+          const detailedError =
+            bringData?.details?.errors?.[0]?.messages?.[0]?.message ||
+            bringData?.details?.errors?.[0]?.code ||
+            bringData?.details?.message ||
+            bringData?.message ||
+            'Bring-booking feilet.';
+          
+          throw new Error(`Bring: ${detailedError}`);
         }
       }
 
@@ -445,7 +453,7 @@ export default function CheckoutModal({
         </div>
 
         {errorMessage && (
-          <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-700">
             {errorMessage}
           </div>
         )}
