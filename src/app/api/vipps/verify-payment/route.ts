@@ -9,30 +9,18 @@ const FINAL_FAILURE_STATES = new Set([
   'TERMINATED',
 ]);
 
+function getBaseUrl(request: NextRequest): string {
+  return request.nextUrl.origin.replace(/\/+$/, '');
+}
+
 export async function GET(request: NextRequest) {
+  const baseUrl = getBaseUrl(request);
+
   try {
     const reference = request.nextUrl.searchParams.get('reference')?.trim();
 
-    if (!reference) {
-      return NextResponse.json(
-        {
-          success: false,
-          verified: false,
-          message: 'Vipps-referanse mangler.',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!/^[a-zA-Z0-9-]{8,64}$/.test(reference)) {
-      return NextResponse.json(
-        {
-          success: false,
-          verified: false,
-          message: 'Vipps-referansen har ugyldig format.',
-        },
-        { status: 400 }
-      );
+    if (!reference || !/^[a-zA-Z0-9-]{8,64}$/.test(reference)) {
+      return NextResponse.redirect(`${baseUrl}/?payment_error=invalid_reference`);
     }
 
     const payment = await getVippsPaymentStatus(reference);
@@ -44,36 +32,38 @@ export async function GET(request: NextRequest) {
       reference,
       state,
       verified,
+      failed,
     });
 
-    return NextResponse.json({
-      success: true,
-      verified,
-      failed,
-      reference,
-      state,
-      authorizedAmount:
-        payment?.aggregate?.authorizedAmount?.value ?? 0,
-      capturedAmount:
-        payment?.aggregate?.capturedAmount?.value ?? 0,
-      currency:
-        payment?.amount?.currency ||
-        payment?.aggregate?.authorizedAmount?.currency ||
-        'NOK',
-    });
+    // 1. DERSOM BETALINGEN BLE GODKJENT
+    if (verified) {
+      try {
+        // Kaller den interne ruten som oppdaterer Monday og oppretter Bring-booking
+        await fetch(`${baseUrl}/api/vipps/complete-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reference }),
+          cache: 'no-store',
+        });
+      } catch (completeError) {
+        console.error('Feil under kjørsel av complete-payment:', completeError);
+      }
+
+      // Sender kunden til den visuelle kvitteringssiden
+      return NextResponse.redirect(`${baseUrl}/ordre-bekreftet?orderId=${reference}`);
+    }
+
+    // 2. DERSOM BETALINGEN BLE AVBRUTT ELLER FEILET HOS VIPPS
+    if (failed || state === 'ABORTED') {
+      return NextResponse.redirect(`${baseUrl}/?payment_cancelled=true`);
+    }
+
+    // 3. EVENTUELLE ANDRE UKJENTE STATUSER
+    return NextResponse.redirect(`${baseUrl}/?payment_pending=true`);
   } catch (error) {
     console.error('Feil ved verifisering av Vipps-betaling:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        verified: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Kunne ikke verifisere betalingen hos Vipps.',
-      },
-      { status: 500 }
-    );
+    return NextResponse.redirect(`${baseUrl}/?payment_error=system_error`);
   }
 }
