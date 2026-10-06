@@ -293,7 +293,7 @@ export default function CheckoutModal({
     }
   };
 
-  // 2. Simulert test-gjennomføring uten Vipps (For Bring & Monday test)
+  // 2. Simulert test-gjennomføring uten Vipps (Kaller opprettelse, checkout og Bring direkte)
   const handleDirectTestCheckout = async () => {
     setErrorMessage('');
 
@@ -307,7 +307,7 @@ export default function CheckoutModal({
     setTestLoading(true);
 
     try {
-      // Step A: Opprett ordre i Monday
+      // Step A: Opprett vore i Monday
       const createRes = await fetch('/api/vipps/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -341,18 +341,47 @@ export default function CheckoutModal({
 
       const orderId = createData.orderId;
 
-      // Step B: Kjell ferdigstillings-APIet som om Vipps var "AUTHORIZED"
-      const completeRes = await fetch('/api/vipps/complete-payment', {
+      // Step B: Kjøre direkte checkout for å trekke fra lager og sende e-post
+      const checkoutRes = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          reference: orderId,
+          product: {
+            ...product,
+            shippingPrice,
+            totalPrice,
+          },
+          customer: {
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            postalCode: normalizedPostalCode,
+            city: city.trim(),
+            deliveryMethod,
+          },
+          orderId,
         }),
       });
 
-      const completeData = await completeRes.json();
-      if (!completeRes.ok || !completeData.success) {
-        throw new Error(completeData.message || 'Kunne ikke verifisere test-ordren.');
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutRes.ok || !checkoutData.success) {
+        throw new Error(checkoutData.message || 'Kunne ikke gjennomføre checkout/lagertrekk.');
+      }
+
+      // Step C: Trigger Bring-booking direkte dersom Postsending er valgt
+      if (deliveryMethod === 'Postsending') {
+        const bringRes = await fetch('/api/bring/create-shipment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-secret': 'test', // Forbikobler Vipps-sjekken
+          },
+          body: JSON.stringify({ orderId }),
+        });
+
+        const bringData = await bringRes.json();
+        console.log('Test Bring response:', bringData);
       }
 
       if (onSuccess) {
