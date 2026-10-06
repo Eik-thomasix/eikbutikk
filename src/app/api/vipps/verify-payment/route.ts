@@ -23,44 +23,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/?payment_error=invalid_reference`);
     }
 
-    const payment = await getVippsPaymentStatus(reference);
-    const state = String(payment?.state || 'UNKNOWN').toUpperCase();
-    const verified = VERIFIED_STATES.has(state);
-    const failed = FINAL_FAILURE_STATES.has(state);
-
-    console.log('Vipps-betalingsstatus kontrollert:', {
-      reference,
-      state,
-      verified,
-      failed,
-    });
-
-    // 1. DERSOM BETALINGEN BLE GODKJENT
-    if (verified) {
-      try {
-        // Kaller den interne ruten som oppdaterer Monday og oppretter Bring-booking
-        await fetch(`${baseUrl}/api/vipps/complete-payment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ reference }),
-          cache: 'no-store',
-        });
-      } catch (completeError) {
-        console.error('Feil under kjørsel av complete-payment:', completeError);
-      }
-
-      // Sender kunden til den visuelle kvitteringssiden
-      return NextResponse.redirect(`${baseUrl}/ordre-bekreftet?orderId=${reference}`);
+    // Call complete-payment endpoint to let it update Monday (move to processing or cancelled)
+    try {
+      await fetch(`${baseUrl}/api/vipps/complete-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reference }),
+        cache: 'no-store',
+      });
+    } catch (completeErr) {
+      console.error('Feil under kjørsel av complete-payment:', completeErr);
     }
 
-    // 2. DERSOM BETALINGEN BLE AVBRUTT ELLER FEILET HOS VIPPS
-    if (failed || state === 'ABORTED') {
+    // Verify current status with Vipps
+    const payment = await getVippsPaymentStatus(reference);
+    const state = String(payment?.state || 'UNKNOWN').toUpperCase();
+
+    if (VERIFIED_STATES.has(state)) {
+      return NextResponse.redirect(`${baseUrl}/ordre-bekreftet?ordrenr=${encodeURIComponent(reference)}`);
+    }
+
+    if (FINAL_FAILURE_STATES.has(state)) {
       return NextResponse.redirect(`${baseUrl}/?payment_cancelled=true`);
     }
 
-    // 3. EVENTUELLE ANDRE UKJENTE STATUSER
     return NextResponse.redirect(`${baseUrl}/?payment_pending=true`);
   } catch (error) {
     console.error('Feil ved verifisering av Vipps-betaling:', error);
