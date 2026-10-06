@@ -9,6 +9,17 @@ const ORDER_COLUMNS = {
   vippsStatus: 'color_mm73pqa6',
   stockUpdated: 'boolean_mm73w05',
   productJson: 'long_text_mm73r6vx',
+  // Kunde- og adressekolonner i Monday
+  customerName: 'text_mm73x8e9', 
+  customerEmail: 'email_mm73y45r',
+  customerPhone: 'phone_mm73k941',
+  customerAddress: 'text_mm73m33l',
+  customerPostalCode: 'text_mm73p89n',
+  customerCity: 'text_mm73z69p',
+  deliveryMethod: 'color_mm73w78m',
+  productName: 'text_mm73c41k',
+  netPrice: 'numeric_mm73d91l',
+  shippingPrice: 'numeric_mm73m87p',
 } as const;
 
 function getInternalBaseUrl(request: NextRequest): string {
@@ -49,9 +60,33 @@ async function createPendingOrderInMonday(params: {
   boardId: string;
   orderId: string;
   customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerAddress: string;
+  customerPostalCode: string;
+  customerCity: string;
+  deliveryMethod: string;
+  productName: string;
+  salePrice: number;
+  shippingPrice: number;
   productJson: string;
 }) {
-  const { apiKey, boardId, orderId, customerName, productJson } = params;
+  const {
+    apiKey,
+    boardId,
+    orderId,
+    customerName,
+    customerEmail,
+    customerPhone,
+    customerAddress,
+    customerPostalCode,
+    customerCity,
+    deliveryMethod,
+    productName,
+    salePrice,
+    shippingPrice,
+    productJson,
+  } = params;
 
   const mutation = `
     mutation CreateOrder(
@@ -67,18 +102,28 @@ async function createPendingOrderInMonday(params: {
     }
   `;
 
-  const columnValues = JSON.stringify({
+  // Mappe alle verdier til rett kolonne i Monday
+  const columnValuesPayload: Record<string, unknown> = {
     [ORDER_COLUMNS.orderNumber]: orderId,
     [ORDER_COLUMNS.vippsOrderId]: orderId,
     [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
     [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
     [ORDER_COLUMNS.productJson]: productJson,
-  });
+  };
+
+  // Valgfrie felter legges inn dersom kolonne-ID-ene matcher eller kan settes som tekst
+  if (customerName) columnValuesPayload[ORDER_COLUMNS.customerName] = customerName;
+  if (customerAddress) columnValuesPayload[ORDER_COLUMNS.customerAddress] = customerAddress;
+  if (customerPostalCode) columnValuesPayload[ORDER_COLUMNS.customerPostalCode] = customerPostalCode;
+  if (customerCity) columnValuesPayload[ORDER_COLUMNS.customerCity] = customerCity;
+  if (productName) columnValuesPayload[ORDER_COLUMNS.productName] = productName;
+  if (salePrice) columnValuesPayload[ORDER_COLUMNS.netPrice] = salePrice;
+  if (shippingPrice) columnValuesPayload[ORDER_COLUMNS.shippingPrice] = shippingPrice;
 
   await mondayRequest(apiKey, mutation, {
     boardId,
     itemName: `Ordre ${orderId} - ${customerName}`,
-    columnValues,
+    columnValues: JSON.stringify(columnValuesPayload),
   });
 }
 
@@ -118,6 +163,8 @@ export async function POST(request: NextRequest) {
     const salePrice = Number(product.salePrice);
     const totalPrice = salePrice + shippingPrice;
 
+    const deliveryMethod = shipping?.deliveryMethod || customer.deliveryMethod || 'Postsending';
+
     const storedOrderData = {
       orderId,
       product: {
@@ -137,11 +184,11 @@ export async function POST(request: NextRequest) {
         address: customer.address || '',
         postalCode: customer.postalCode || '',
         city: customer.city || '',
-        deliveryMethod: shipping?.deliveryMethod || customer.deliveryMethod || 'Henting',
+        deliveryMethod,
       },
       shipping: {
         price: shippingPrice,
-        deliveryMethod: shipping?.deliveryMethod || customer.deliveryMethod || 'Henting',
+        deliveryMethod,
       },
       createdAt: new Date().toISOString(),
     };
@@ -153,6 +200,15 @@ export async function POST(request: NextRequest) {
       boardId: orderBoardId,
       orderId,
       customerName: customer.name,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      customerAddress: customer.address || '',
+      customerPostalCode: customer.postalCode || '',
+      customerCity: customer.city || '',
+      deliveryMethod,
+      productName: product.name,
+      salePrice,
+      shippingPrice,
       productJson,
     });
 
