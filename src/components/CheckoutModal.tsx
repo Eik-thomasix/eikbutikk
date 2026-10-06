@@ -293,7 +293,7 @@ export default function CheckoutModal({
     }
   };
 
-  // 2. Simulert test-gjennomføring uten Vipps (Kaller Bring via trygg server-rute)
+  // 2. Simulert test-gjennomføring uten Vipps
   const handleDirectTestCheckout = async () => {
     setErrorMessage('');
 
@@ -343,7 +343,7 @@ export default function CheckoutModal({
       const orderId = createData.orderId;
       console.log('Test-ordre opprettet i Monday med ID:', orderId);
 
-      // Step B: Kjøre direkte checkout for lager-trekk og e-postvarsling
+      // Step B: Kjører checkout for lagertrekk og e-postvarsling
       console.log('Kjører checkout (e-post og lagertrekk)...');
       const checkoutRes = await fetch('/api/checkout', {
         method: 'POST',
@@ -372,9 +372,9 @@ export default function CheckoutModal({
         throw new Error(checkoutData.message || 'Kunne ikke gjennomføre checkout/lagertrekk.');
       }
 
-      // Step C: Trigger Bring-booking via vår nye /api/bring/test-shipment som leser BRING_ADMIN_SECRET fra env
+      // Step C: Trigger Bring-booking via /api/bring/test-shipment
       if (deliveryMethod === 'Postsending') {
-        console.log('Kaller Bring test-shipment med hemmelig nøkkel fra env...');
+        console.log('Kaller Bring test-shipment...');
         const bringRes = await fetch('/api/bring/test-shipment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
