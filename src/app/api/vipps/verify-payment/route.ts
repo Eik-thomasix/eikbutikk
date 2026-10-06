@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/?payment_error=invalid_reference`);
     }
 
-    // Call complete-payment endpoint to let it update Monday (move to processing or cancelled)
     try {
       await fetch(`${baseUrl}/api/vipps/complete-payment`, {
         method: 'POST',
@@ -37,7 +36,6 @@ export async function GET(request: NextRequest) {
       console.error('Feil under kjørsel av complete-payment:', completeErr);
     }
 
-    // Verify current status with Vipps
     const payment = await getVippsPaymentStatus(reference);
     const state = String(payment?.state || 'UNKNOWN').toUpperCase();
 
