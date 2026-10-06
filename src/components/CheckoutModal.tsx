@@ -293,7 +293,7 @@ export default function CheckoutModal({
     }
   };
 
-  // 2. Simulert test-gjennomføring uten Vipps (Kaller opprettelse, checkout og Bring direkte)
+  // 2. Simulert test-gjennomføring uten Vipps (Kaller Bring via trygg server-rute)
   const handleDirectTestCheckout = async () => {
     setErrorMessage('');
 
@@ -307,7 +307,8 @@ export default function CheckoutModal({
     setTestLoading(true);
 
     try {
-      // Step A: Opprett vore i Monday
+      // Step A: Opprett ordre i Monday
+      console.log('Oppretter test-ordre i Monday...');
       const createRes = await fetch('/api/vipps/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -340,8 +341,10 @@ export default function CheckoutModal({
       }
 
       const orderId = createData.orderId;
+      console.log('Test-ordre opprettet i Monday med ID:', orderId);
 
-      // Step B: Kjøre direkte checkout for å trekke fra lager og sende e-post
+      // Step B: Kjøre direkte checkout for lager-trekk og e-postvarsling
+      console.log('Kjører checkout (e-post og lagertrekk)...');
       const checkoutRes = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -369,26 +372,28 @@ export default function CheckoutModal({
         throw new Error(checkoutData.message || 'Kunne ikke gjennomføre checkout/lagertrekk.');
       }
 
-      // Step C: Trigger Bring-booking direkte dersom Postsending er valgt
+      // Step C: Trigger Bring-booking via vår nye /api/bring/test-shipment som leser BRING_ADMIN_SECRET fra env
       if (deliveryMethod === 'Postsending') {
-        const bringRes = await fetch('/api/bring/create-shipment', {
+        console.log('Kaller Bring test-shipment med hemmelig nøkkel fra env...');
+        const bringRes = await fetch('/api/bring/test-shipment', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-secret': 'test', // Forbikobler Vipps-sjekken
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId }),
         });
 
         const bringData = await bringRes.json();
-        console.log('Test Bring response:', bringData);
+        console.log('Svar fra Bring test-shipment:', bringData);
+
+        if (!bringRes.ok || !bringData.success) {
+          throw new Error(bringData.message || 'Bring-booking feilet.');
+        }
       }
 
       if (onSuccess) {
         await onSuccess();
       }
 
-      // Omdiriger til bekreftelsessiden
+      // Omdiriger til bekreftelsessiden når alt er fullført
       window.location.href = `/ordre-bekreftet?ordrenr=${encodeURIComponent(orderId)}`;
     } catch (error) {
       console.error('Feil ved test-gjennomføring:', error);
@@ -633,7 +638,7 @@ export default function CheckoutModal({
               : `Betal ${formatPrice(totalPrice)} kr med Vipps`}
           </button>
 
-          {/* TESTKNAPP: Kjører Bring + Monday uten Vipps-omdirigering */}
+          {/* TESTKNAPP: Kjører Bring + Monday via /api/bring/test-shipment */}
           <button
             type="button"
             onClick={handleDirectTestCheckout}
