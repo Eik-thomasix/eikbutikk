@@ -71,84 +71,182 @@ async function sendOrderEmails(params: {
     orderReference: escapeHtml(orderReference),
   };
 
-  const deliveryText =
-    customer.deliveryMethod === 'Henting i butikk'
-      ? 'Varen klargjøres for henting hos Eiksenteret Sortland, Verkstedveien 2. Kunden får beskjed når varen er klar.'
-      : `Varen klargjøres for postsending til ${safe.address}, ${safe.postalCode} ${safe.city}. Kunden får beskjed når varen er sendt.`;
+  const isPickup = customer.deliveryMethod === 'Henting i butikk';
+  const deliveryText = isPickup
+    ? 'Varen klargjøres for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du får beskjed så snart varen er klar for henting.'
+    : `Varen klargjøres for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du får beskjed med sporingsnummer når pakken er sendt.`;
 
+  // 1. Moderne e-post til kunden
   const customerEmailHtml = `
-    <div style="margin:0;background:#f3f4f6;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-      <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-        <div style="background:#d71920;color:#ffffff;padding:24px;text-align:center;">
-          <h1 style="margin:0;font-size:24px;">Tilbudsboden.no</h1>
-          <p style="margin:6px 0 0;font-size:14px;">Fra Eiksenteret Sortland</p>
-        </div>
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ordrebekreftelse ${safe.orderReference}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f5f7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing:antialiased; color:#1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f5f7; padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 12px rgba(0, 0, 0, 0.05); border:1px solid #e2e8f0;">
+          
+          <!-- Header Banner -->
+          <tr>
+            <td style="background-color:#d71920; padding:28px 32px;">
+              <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td>
+                    <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:-0.5px;">Tilbudsboden.no</h1>
+                    <p style="margin:4px 0 0 0; color:#fecaca; font-size:13px; font-weight:500;">Fra Eiksenteret Sortland</p>
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="background-color:rgba(255, 255, 255, 0.18); color:#ffffff; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; display:inline-block; font-family:monospace;">
+                      ${safe.orderReference}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-        <div style="padding:28px;">
-          <p style="margin:0 0 8px;color:#6b7280;font-size:13px;">Ordre ${safe.orderReference}</p>
-          <h2 style="margin:0 0 16px;font-size:21px;">Takk for bestillingen, ${safe.customerName}!</h2>
-          <p style="margin:0 0 22px;color:#374151;font-size:14px;line-height:1.6;">
-            Betalingen er registrert. Ordren behandles manuelt av våre medarbeidere hos Eiksenteret Sortland.
-          </p>
+          <!-- Main Body -->
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 8px 0; font-size:20px; font-weight:700; color:#0f172a;">
+                Takk for bestillingen, ${safe.customerName}!
+              </h2>
+              <p style="margin:0 0 24px 0; font-size:14px; line-height:1.6; color:#475569;">
+                Betalingen din er registrert via Vipps. Ordren behandles nå manuelt av våre medarbeidere hos Eiksenteret Sortland.
+              </p>
 
-          <div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin:0 0 20px;">
-            <div style="background:#f9fafb;padding:14px 16px;font-weight:bold;color:#d71920;">Ordresammendrag</div>
-            <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;">
-              <tr><td style="padding:11px 16px;border-top:1px solid #e5e7eb;font-weight:bold;">Varenummer</td><td style="padding:11px 16px;border-top:1px solid #e5e7eb;text-align:right;">${safe.itemNumber}</td></tr>
-              <tr><td style="padding:11px 16px;border-top:1px solid #e5e7eb;font-weight:bold;">Produkt</td><td style="padding:11px 16px;border-top:1px solid #e5e7eb;text-align:right;">${safe.productName}</td></tr>
-              <tr><td style="padding:11px 16px;border-top:1px solid #e5e7eb;font-weight:bold;">Levering</td><td style="padding:11px 16px;border-top:1px solid #e5e7eb;text-align:right;">${safe.deliveryMethod}</td></tr>
-              <tr><td style="padding:11px 16px;border-top:1px solid #e5e7eb;">Varepris</td><td style="padding:11px 16px;border-top:1px solid #e5e7eb;text-align:right;">${money(productPrice)}</td></tr>
-              <tr><td style="padding:11px 16px;border-top:1px solid #e5e7eb;">Frakt</td><td style="padding:11px 16px;border-top:1px solid #e5e7eb;text-align:right;">${money(shippingPrice)}</td></tr>
-              <tr style="background:#fff7f7;"><td style="padding:14px 16px;border-top:2px solid #fecaca;font-size:16px;font-weight:bold;">Totalt betalt</td><td style="padding:14px 16px;border-top:2px solid #fecaca;text-align:right;font-size:17px;font-weight:bold;color:#d71920;">${money(totalPrice)}</td></tr>
-            </table>
-          </div>
+              <!-- Produktkort -->
+              <div style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:24px;">
+                <p style="margin:0 0 4px 0; font-size:15px; font-weight:700; color:#0f172a;">${safe.productName}</p>
+                <p style="margin:0 0 10px 0; font-size:12px; color:#64748b;">Varenr: <span style="font-family:monospace; font-weight:600;">${safe.itemNumber}</span></p>
+                <div style="border-top:1px solid #e2e8f0; padding-top:10px; font-size:13px; color:#334155;">
+                  Leveringsmetode: <strong style="color:#0f172a;">${safe.deliveryMethod}</strong>
+                </div>
+              </div>
 
-          <div style="background:#f3f4f6;border-radius:8px;padding:15px;font-size:13px;line-height:1.55;color:#374151;">
-            <strong>Leveringsinformasjon</strong><br>${deliveryText}
-          </div>
+              <!-- Prisoppsummering -->
+              <table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:28px;">
+                <tr>
+                  <td style="padding:6px 0; font-size:14px; color:#64748b;">Varepris</td>
+                  <td align="right" style="padding:6px 0; font-size:14px; font-weight:600; color:#0f172a;">${money(productPrice)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0; font-size:14px; color:#64748b;">Frakt</td>
+                  <td align="right" style="padding:6px 0; font-size:14px; font-weight:600; color:#0f172a;">${money(shippingPrice)}</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding:10px 0 0 0;"><div style="border-top:1px solid #e2e8f0;"></div></td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0 0 0; font-size:16px; font-weight:700; color:#0f172a;">Totalt betalt</td>
+                  <td align="right" style="padding:12px 0 0 0; font-size:18px; font-weight:800; color:#d71920;">${money(totalPrice)}</td>
+                </tr>
+              </table>
 
-          <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:#4b5563;">
-            Spørsmål om bestillingen?<br>
-            Eiksenteret Sortland, Verkstedveien 2, 8402 Sortland<br>
-            Telefon: 76 12 13 60 · <a href="mailto:sortland@eiksenteret.com" style="color:#d71920;">sortland@eiksenteret.com</a>
-          </p>
-        </div>
-      </div>
-    </div>
+              <!-- Leveringsinformasjon -->
+              <div style="background-color:#f1f5f9; border-radius:12px; padding:18px; margin-bottom:28px;">
+                <h3 style="margin:0 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">
+                  Leveringsinformasjon
+                </h3>
+                <p style="margin:0; font-size:13.5px; line-height:1.55; color:#1e293b;">
+                  ${deliveryText}
+                </p>
+              </div>
+
+              <!-- Support Footer -->
+              <p style="margin:0; font-size:13px; line-height:1.55; color:#64748b; text-align:center;">
+                Spørsmål om bestillingen?<br>
+                Eiksenteret Sortland, Verkstedveien 2, 8402 Sortland<br>
+                Telefon: <strong>76 12 13 60</strong> · <a href="mailto:sortland@eiksenteret.com" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.com</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f8fafc; border-top:1px solid #e2e8f0; padding:20px 32px; text-align:center;">
+              <p style="margin:0 0 2px 0; font-size:12px; font-weight:600; color:#475569;">Eiksenteret Sortland</p>
+              <p style="margin:0; font-size:11.5px; color:#94a3b8;">Verkstedveien 2, 8402 Sortland · sortland@eiksenteret.com</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
   `;
 
+  // 2. Internt varsel til butikken (Forbeholdt SAP B1-registrering)
   const storeEmailHtml = `
-    <div style="margin:0;background:#f3f4f6;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-      <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-        <div style="background:#171717;color:#ffffff;padding:22px 26px;">
-          <h1 style="margin:0;font-size:23px;">Nytt salg i Tilbudsboden.no</h1>
-          <p style="margin:6px 0 0;color:#d1d5db;font-size:14px;">Ordre ${safe.orderReference}</p>
-        </div>
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <title>Ny ordre ${safe.orderReference}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f5f7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f5f7; padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background-color:#ffffff; border-radius:14px; overflow:hidden; border:1px solid #e2e8f0;">
+          
+          <td style="background-color:#18181b; padding:22px 28px; color:#ffffff;">
+            <h1 style="margin:0; font-size:20px; font-weight:700;">Nytt salg i Tilbudsboden.no</h1>
+            <p style="margin:4px 0 0 0; color:#a1a1aa; font-size:13px; font-family:monospace;">Ordre ${safe.orderReference}</p>
+          </td>
 
-        <div style="padding:26px;">
-          <div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:13px;margin-bottom:20px;font-size:13px;line-height:1.5;">
-            <strong>Tiltak:</strong> Kontroller varen fysisk, klargjør levering og opprett salgsordre i SAP B1.
-          </div>
+          <td style="padding:28px;">
+            <div style="background-color:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:8px; padding:14px; margin-bottom:22px; font-size:13px; line-height:1.5;">
+              <strong>Tiltak for butikk:</strong> Kontroller varen fysisk, klargjør levering og opprett salgsordre/faktura i SAP B1.
+            </div>
 
-          <h2 style="font-size:17px;margin:0 0 10px;color:#d71920;">Kunde og levering</h2>
-          <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">
-            <tr><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;font-weight:bold;width:38%;">Kunde</td><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;">${safe.customerName}</td></tr>
-            <tr><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;font-weight:bold;">Telefon</td><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;">${safe.customerPhone}</td></tr>
-            <tr><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;font-weight:bold;">E-post</td><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;">${safe.customerEmail}</td></tr>
-            <tr><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;font-weight:bold;">Leveringsmetode</td><td style="padding:9px 0;border-bottom:1px solid #e5e7eb;color:#d71920;font-weight:bold;">${safe.deliveryMethod}</td></tr>
-            <tr><td style="padding:9px 0;font-weight:bold;">Adresse</td><td style="padding:9px 0;">${safe.address}, ${safe.postalCode} ${safe.city}</td></tr>
-          </table>
+            <h2 style="font-size:15px; font-weight:700; margin:0 0 12px 0; color:#d71920; text-transform:uppercase; letter-spacing:0.5px;">Kunde og levering</h2>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="font-size:14px; margin-bottom:24px;">
+              <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b; width:35%;">Kunde</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600; color:#0f172a;">${safe.customerName}</td></tr>
+              <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Telefon</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600; color:#0f172a;">${safe.customerPhone}</td></tr>
+              <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">E-post</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:600; color:#0f172a;">${safe.customerEmail}</td></tr>
+              <tr><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; color:#64748b;">Leveringsmetode</td><td style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-weight:700; color:#d71920;">${safe.deliveryMethod}</td></tr>
+              <tr><td style="padding:8px 0; color:#64748b;">Adresse</td><td style="padding:8px 0; font-weight:600; color:#0f172a;">${safe.address}, ${safe.postalCode} ${safe.city}</td></tr>
+            </table>
 
-          <h2 style="font-size:17px;margin:0 0 10px;color:#d71920;">Ordredetaljer for SAP B1</h2>
-          <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;">
-            <tr style="background:#f3f4f6;"><th style="padding:10px;text-align:left;">Varenr.</th><th style="padding:10px;text-align:left;">Beskrivelse</th><th style="padding:10px;text-align:center;">Antall</th><th style="padding:10px;text-align:right;">Varepris</th></tr>
-            <tr><td style="padding:11px 10px;border-bottom:1px solid #e5e7eb;font-weight:bold;">${safe.itemNumber}</td><td style="padding:11px 10px;border-bottom:1px solid #e5e7eb;">${safe.productName}</td><td style="padding:11px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">1</td><td style="padding:11px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${money(productPrice)}</td></tr>
-            <tr><td colspan="3" style="padding:10px;text-align:right;">Frakt</td><td style="padding:10px;text-align:right;">${money(shippingPrice)}</td></tr>
-            <tr style="background:#fff7f7;"><td colspan="3" style="padding:12px 10px;text-align:right;font-weight:bold;border-top:2px solid #fecaca;">Totalt betalt</td><td style="padding:12px 10px;text-align:right;font-weight:bold;color:#d71920;border-top:2px solid #fecaca;">${money(totalPrice)}</td></tr>
-          </table>
-        </div>
-      </div>
-    </div>
+            <h2 style="font-size:15px; font-weight:700; margin:0 0 12px 0; color:#d71920; text-transform:uppercase; letter-spacing:0.5px;">Ordredetaljer for SAP B1</h2>
+            <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="font-size:13.5px;">
+                <tr style="background-color:#f8fafc;">
+                  <th style="padding:10px 14px; text-align:left; color:#475569; font-weight:600;">Varenr.</th>
+                  <th style="padding:10px 14px; text-align:left; color:#475569; font-weight:600;">Beskrivelse</th>
+                  <th style="padding:10px 14px; text-align:center; color:#475569; font-weight:600;">Antall</th>
+                  <th style="padding:10px 14px; text-align:right; color:#475569; font-weight:600;">Varepris</th>
+                </tr>
+                <tr>
+                  <td style="padding:12px 14px; border-top:1px solid #e2e8f0; font-family:monospace; font-weight:700;">${safe.itemNumber}</td>
+                  <td style="padding:12px 14px; border-top:1px solid #e2e8f0; font-weight:600;">${safe.productName}</td>
+                  <td style="padding:12px 14px; border-top:1px solid #e2e8f0; text-align:center;">1</td>
+                  <td style="padding:12px 14px; border-top:1px solid #e2e8f0; text-align:right;">${money(productPrice)}</td>
+                </tr>
+                <tr>
+                  <td colspan="3" style="padding:8px 14px; text-align:right; color:#64748b; border-top:1px solid #e2e8f0;">Frakt</td>
+                  <td style="padding:8px 14px; text-align:right; border-top:1px solid #e2e8f0; font-weight:600;">${money(shippingPrice)}</td>
+                </tr>
+                <tr style="background-color:#fff1f2;">
+                  <td colspan="3" style="padding:12px 14px; text-align:right; font-weight:700; border-top:1px solid #fecdd3; color:#0f172a;">Totalt betalt</td>
+                  <td style="padding:12px 14px; text-align:right; font-weight:800; border-top:1px solid #fecdd3; color:#d71920; font-size:15px;">${money(totalPrice)}</td>
+                </tr>
+              </table>
+            </div>
+          </td>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
   `;
 
   const customerResult = await resend.emails.send({
