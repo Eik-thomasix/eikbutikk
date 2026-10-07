@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVippsPaymentStatus } from '@/lib/vipps';
 
+// Riktige Gruppe-ID-er i Monday-boardet
 const ORDER_GROUPS = {
-  processing: 'group_mm73ae8b',
-  cancelled: 'group_mm7317nf',
+  paid: 'topics', // Gruppe-ID for 'Betalt'
+  cancelled: 'group_mm7317nf', // Gruppe-ID for 'Avbrutt'
 } as const;
 
 const ORDER_COLUMNS = {
@@ -15,13 +16,6 @@ const ORDER_COLUMNS = {
   stockUpdated: 'boolean_mm73w05',
   processedDate: 'date_mm73p2e2',
   productJson: 'long_text_mm73r6vx',
-  customerName: 'text_mm73x8e9',
-  customerEmail: 'email_mm73y45r',
-  customerPhone: 'phone_mm73k941',
-  customerAddress: 'text_mm73m33l',
-  customerPostalCode: 'text_mm73p89n',
-  customerCity: 'text_mm73z69p',
-  deliveryMethod: 'color_mm73w78m',
 } as const;
 
 const VERIFIED_STATES = new Set(['AUTHORIZED', 'CAPTURED']);
@@ -58,8 +52,6 @@ interface StoredOrderData {
     weight?: number;
     deliveryMethod?: string;
   };
-  createdAt?: string;
-  processed?: boolean;
 }
 
 interface MondayColumnValue {
@@ -139,7 +131,7 @@ function parseMondayLongText(column?: MondayColumnValue): string {
 
 function isChecked(column?: MondayColumnValue): boolean {
   const text = column?.text?.trim().toLowerCase();
-  if (['v', 'yes', 'true', 'checked'].includes(text || '')) return true;
+  if (['v', 'yes', 'true', 'checked', '1'].includes(text || '')) return true;
   if (!column?.value) return false;
 
   try {
@@ -190,16 +182,9 @@ async function findMondayOrder(
     const items: MondayOrderItem[] = page?.items || [];
 
     const match = items.find((item) => {
-      const orderNumber = getColumn(
-        item,
-        ORDER_COLUMNS.orderNumber
-      )?.text?.trim();
-      const vippsOrderId = getColumn(
-        item,
-        ORDER_COLUMNS.vippsOrderId
-      )?.text?.trim();
+      const orderNumber = getColumn(item, ORDER_COLUMNS.orderNumber)?.text?.trim();
+      const vippsOrderId = getColumn(item, ORDER_COLUMNS.vippsOrderId)?.text?.trim();
       const itemName = item.name || '';
-      
       return (
         orderNumber === reference ||
         vippsOrderId === reference ||
@@ -367,7 +352,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (isChecked(getColumn(mondayOrder, ORDER_COLUMNS.stockUpdated))) {
+    // AVSKJÆR DOBBELSENDING DERSOM BOKS ER HAKKET AV ELLER ER BETALT
+    const paymentStatusText = getColumn(mondayOrder, ORDER_COLUMNS.paymentStatus)?.text?.trim().toLowerCase();
+    if (isChecked(getColumn(mondayOrder, ORDER_COLUMNS.stockUpdated)) || paymentStatusText === 'betalt') {
+      console.log(`Ordre ${reference} er allerede ferdigbehandlet. Hopper over dobbel e-post.`);
       return NextResponse.json({
         success: true,
         verified: true,
@@ -394,133 +382,62 @@ export async function POST(request: NextRequest) {
 
     validateStoredOrder(storedOrder);
 
-    if (storedOrder.orderId !== reference) {
-      throw new Error('Vipps-referansen samsvarer ikke med lagret ordre.');
-    }
-
-    const authorizedAmount = Number(
-      payment?.aggregate?.authorizedAmount?.value || 0
-    );
-    const capturedAmount = Number(
-      payment?.aggregate?.capturedAmount?.value || 0
-    );
-    const confirmedAmount = Math.max(authorizedAmount, capturedAmount);
-    const expectedTotal = calculateExpectedTotal(storedOrder);
-    const expectedAmount = Math.round(expectedTotal * 100);
-
-    if (confirmedAmount !== expectedAmount) {
-      throw new Error(
-        `Beløpet hos Vipps (${confirmedAmount}) samsvarer ikke med ordren (${expectedAmount}).`
-      );
-    }
+    // Sett lås på ordren i Monday FØR vi kaller e-post/checkout, og flytt til 'Betalt'-gruppen
+    const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
+    await updateMondayOrder({
+      apiKey: mondayApiKey,
+      boardId: orderBoardId,
+      itemId: mondayOrder.id,
+      groupId: ORDER_GROUPS.paid,
+      columnValues: {
+        [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
+        [ORDER_COLUMNS.vippsStatus]: { label: vippsLabel },
+        [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
+        [ORDER_COLUMNS.stockUpdated]: { checked: 'true' },
+        [ORDER_COLUMNS.processedDate]: { date: norwegianDate() },
+      },
+    });
 
     const checkoutProduct = {
       ...storedOrder.product,
       shippingPrice: Number(
         storedOrder.product.shippingPrice ?? storedOrder.shipping?.price ?? 0
       ),
-      totalPrice: expectedTotal,
+      totalPrice: calculateExpectedTotal(storedOrder),
     };
 
-    const checkoutResponse = await fetch(
-      `${getInternalBaseUrl(request)}/api/checkout`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product: checkoutProduct,
-          customer: storedOrder.customer,
-          shipping: storedOrder.shipping,
-          payment: {
-            reference,
-            state,
-            authorizedAmount,
-            capturedAmount,
-          },
-        }),
-        cache: 'no-store',
-      }
-    );
-
-    const checkoutData = await checkoutResponse.json();
-
-    if (!checkoutResponse.ok || !checkoutData?.success) {
-      throw new Error(
-        checkoutData?.message ||
-          'Checkout klarte ikke å oppdatere lager eller sende ordredata.'
-      );
-    }
-
-    const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
-
-    const updatePayload: Record<string, unknown> = {
-      [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
-      [ORDER_COLUMNS.vippsStatus]: { label: vippsLabel },
-      [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
-      [ORDER_COLUMNS.stockUpdated]: { checked: 'true' },
-      [ORDER_COLUMNS.processedDate]: { date: norwegianDate() },
-    };
-
-    await updateMondayOrder({
-      apiKey: mondayApiKey,
-      boardId: orderBoardId,
-      itemId: mondayOrder.id,
-      groupId: ORDER_GROUPS.processing,
-      columnValues: updatePayload,
-    });
-
-    console.log('Vipps-ordre fullført med frakt og oppdatert i Monday:', {
-      reference,
-      state,
-      expectedTotal,
-      mondayItemId: mondayOrder.id,
+    // Kaller checkout for e-post og lagertrekk
+    await fetch(`${getInternalBaseUrl(request)}/api/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product: checkoutProduct,
+        customer: storedOrder.customer,
+        shipping: storedOrder.shipping,
+        payment: { reference, state },
+      }),
+      cache: 'no-store',
     });
 
     const deliveryMethod =
-      storedOrder.customer.deliveryMethod ||
-      storedOrder.shipping?.deliveryMethod;
+      storedOrder.customer.deliveryMethod || storedOrder.shipping?.deliveryMethod;
 
     if (deliveryMethod === 'Postsending') {
       const adminSecret = process.env.BRING_ADMIN_SECRET?.trim();
-
       if (adminSecret) {
         try {
-          console.log(`Starter automatisk Bring-booking for ${reference}...`);
-          const bringResponse = await fetch(
-            `${getInternalBaseUrl(request)}/api/bring/create-shipment`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-admin-secret': adminSecret,
-              },
-              body: JSON.stringify({ orderId: reference }),
-              cache: 'no-store',
-            }
-          );
-
-          const bringResult = await bringResponse.json();
-          if (bringResponse.ok && bringResult.success) {
-            console.log(
-              `Bring-booking fullført for ${reference}:`,
-              bringResult
-            );
-          } else {
-            console.error(
-              `Bring-booking feilet for ${reference}:`,
-              bringResult
-            );
-          }
+          await fetch(`${getInternalBaseUrl(request)}/api/bring/create-shipment`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-secret': adminSecret,
+            },
+            body: JSON.stringify({ orderId: reference }),
+            cache: 'no-store',
+          });
         } catch (bringErr) {
-          console.error(
-            `Unntak ved automatisk Bring-booking for ${reference}:`,
-            bringErr
-          );
+          console.error(`Bring-booking feilet for ${reference}:`, bringErr);
         }
-      } else {
-        console.warn(
-          'BRING_ADMIN_SECRET mangler i miljøvariablene. Bring-booking ble ikke trigget automatisk.'
-        );
       }
     }
 

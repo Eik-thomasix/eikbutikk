@@ -76,7 +76,7 @@ async function sendOrderEmails(params: {
     ? 'Varen klargjøres for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du får en e-post/SMS så snart varen er klar.'
     : `Varen klargjøres for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du får beskjed med sporingsnummer når pakken er sendt.`;
 
-  // 1. Ryddig og merkevaretilpasset e-post til kunden
+  // 1. E-post til kunden
   const customerEmailHtml = `
 <!DOCTYPE html>
 <html lang="no">
@@ -93,7 +93,7 @@ async function sendOrderEmails(params: {
         
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
           
-          <!-- Rødt toppbanner med profilert typografi -->
+          <!-- Rødt toppbanner -->
           <tr>
             <td style="background-color:#d71920; padding:28px 32px; text-align:left;">
               <div style="color:#ffffff; font-size:26px; font-weight:800; letter-spacing:-0.5px; line-height:1.1;">Tilbudsboden.no</div>
@@ -105,7 +105,7 @@ async function sendOrderEmails(params: {
           <tr>
             <td style="padding:36px 32px;">
               
-              <!-- Ordrenummer på egen dedikert linje -->
+              <!-- Ordrenummer -->
               <div style="font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
                 Ordrenummer: <span style="color:#0f172a;">${safe.orderReference}</span>
               </div>
@@ -185,7 +185,7 @@ async function sendOrderEmails(params: {
 </html>
   `;
 
-  // 2. Internt varsel til butikken
+  // 2. Internt varsel til butikken med oppdatert sjekkliste
   const storeEmailHtml = `
 <!DOCTYPE html>
 <html lang="no">
@@ -209,8 +209,12 @@ async function sendOrderEmails(params: {
           <tr>
             <td style="padding:32px;">
               
-              <div style="background-color:#fff7ed; border:1px solid #ffedd5; color:#9a3412; border-radius:10px; padding:14px; margin-bottom:24px; font-size:13.5px;">
-                <strong>Sjekkliste for butikk:</strong> Kontroller lagerbeholdning, klargjør varen for levering og opprett salgsordre/faktura i SAP B1.
+              <div style="background-color:#fff7ed; border:1px solid #ffedd5; color:#9a3412; border-radius:10px; padding:16px; margin-bottom:24px; font-size:13.5px; line-height:1.6;">
+                <strong>Sjekkliste for butikk:</strong><br>
+                1. Kontroller lagerbeholdning og klargjør varen for levering.<br>
+                2. Opprett salgsordre/faktura i SAP B1.<br>
+                3. Husk å fakturere ordren via kassen, og velg <strong>mobilbetaling</strong>.<br>
+                4. Oppdater status i ordreboardet i Monday når ordren er ferdig behandlet.
               </div>
 
               <h2 style="font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#d71920; margin:0 0 12px 0;">Kunde & Levering</h2>

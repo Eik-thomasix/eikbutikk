@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, MapPin, Package, ShieldAlert } from 'lucide-react';
+import { Loader2, MapPin, Package } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -304,14 +304,6 @@ export default function CheckoutModal({
 
         <h2 className="pr-10 text-2xl font-bold text-gray-900">Kasse</h2>
         <p className="mt-1 text-sm text-gray-600">{product.name}</p>
-
-        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-orange-300 bg-orange-50 p-3.5 text-xs text-orange-950 shadow-sm">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
-          <div>
-            <span className="font-bold block text-orange-900">NBNB: Ekte betaling</span>
-            <span>Nettbutikken er i skarpt driftsmiljø. Ved gjennomføring blir du sendt til Vipps-appen og beløpet belastes kontoen din.</span>
-          </div>
-        </div>
 
         <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
           <div className="flex justify-between gap-4 py-1">
