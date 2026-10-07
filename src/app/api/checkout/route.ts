@@ -76,7 +76,7 @@ async function sendOrderEmails(params: {
     ? 'Varen klargjøres for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du får en e-post/SMS så snart varen er klar.'
     : `Varen klargjøres for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du får beskjed med sporingsnummer når pakken er sendt.`;
 
-  // 1. Stilren, moderne 2026-e-post til kunden
+  // 1. Ryddig og merkevaretilpasset e-post til kunden
   const customerEmailHtml = `
 <!DOCTYPE html>
 <html lang="no">
@@ -93,20 +93,11 @@ async function sendOrderEmails(params: {
         
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
           
-          <!-- Ren, rødt toppbanner -->
+          <!-- Rødt toppbanner med profilert typografi -->
           <tr>
-            <td style="background-color:#d71920; padding:32px; text-align:left;">
-              <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                  <td>
-                    <div style="color:#ffffff; font-size:22px; font-weight:800; letter-spacing:-0.5px;">Tilbudsboden.no</div>
-                    <div style="color:rgba(255,255,255,0.85); font-size:13px; font-weight:500; margin-top:2px;">Eiksenteret Sortland</div>
-                  </td>
-                  <td align="right" valign="top">
-                    <div style="color:#ffffff; font-size:13px; font-weight:700; opacity:0.95;">${safe.orderReference}</div>
-                  </td>
-                </tr>
-              </table>
+            <td style="background-color:#d71920; padding:28px 32px; text-align:left;">
+              <div style="color:#ffffff; font-size:26px; font-weight:800; letter-spacing:-0.5px; line-height:1.1;">Tilbudsboden.no</div>
+              <div style="color:#fecaca; font-size:13px; font-weight:500; margin-top:4px;">Fra Eiksenteret Sortland</div>
             </td>
           </tr>
 
@@ -114,6 +105,11 @@ async function sendOrderEmails(params: {
           <tr>
             <td style="padding:36px 32px;">
               
+              <!-- Ordrenummer på egen dedikert linje -->
+              <div style="font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+                Ordrenummer: <span style="color:#0f172a;">${safe.orderReference}</span>
+              </div>
+
               <h1 style="margin:0 0 12px 0; font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-0.3px;">
                 Takk for bestillingen, ${safe.customerName}!
               </h1>
@@ -206,7 +202,7 @@ async function sendOrderEmails(params: {
           <tr style="background-color:#0f172a; color:#ffffff;">
             <td style="padding:24px 32px;">
               <div style="font-size:18px; font-weight:700;">Nytt salg i Tilbudsboden.no</div>
-              <div style="font-size:13px; color:#94a3b8; margin-top:2px;">Ordre ${safe.orderReference}</div>
+              <div style="font-size:13px; color:#94a3b8; margin-top:2px;">Ordrenummer: ${safe.orderReference}</div>
             </td>
           </tr>
 
