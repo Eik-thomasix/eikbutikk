@@ -107,18 +107,17 @@ async function createPendingOrderInMonday(params: {
     [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
     [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
     [ORDER_COLUMNS.productJson]: productJson,
+    [ORDER_COLUMNS.customerName]: customerName,
+    [ORDER_COLUMNS.customerEmail]: { email: customerEmail, text: customerEmail },
+    [ORDER_COLUMNS.customerPhone]: { phone: customerPhone, countryShortName: 'NO' },
+    [ORDER_COLUMNS.customerAddress]: customerAddress,
+    [ORDER_COLUMNS.customerPostalCode]: customerPostalCode,
+    [ORDER_COLUMNS.customerCity]: customerCity,
+    [ORDER_COLUMNS.deliveryMethod]: { label: deliveryMethod },
+    [ORDER_COLUMNS.productName]: productName,
+    [ORDER_COLUMNS.netPrice]: String(salePrice),
+    [ORDER_COLUMNS.shippingPrice]: String(shippingPrice),
   };
-
-  if (customerName) columnValuesPayload[ORDER_COLUMNS.customerName] = customerName;
-  if (customerEmail) columnValuesPayload[ORDER_COLUMNS.customerEmail] = { email: customerEmail, text: customerEmail };
-  if (customerPhone) columnValuesPayload[ORDER_COLUMNS.customerPhone] = { phone: customerPhone, countryShortName: 'NO' };
-  if (customerAddress) columnValuesPayload[ORDER_COLUMNS.customerAddress] = customerAddress;
-  if (customerPostalCode) columnValuesPayload[ORDER_COLUMNS.customerPostalCode] = customerPostalCode;
-  if (customerCity) columnValuesPayload[ORDER_COLUMNS.customerCity] = customerCity;
-  if (deliveryMethod) columnValuesPayload[ORDER_COLUMNS.deliveryMethod] = { label: deliveryMethod };
-  if (productName) columnValuesPayload[ORDER_COLUMNS.productName] = productName;
-  if (salePrice) columnValuesPayload[ORDER_COLUMNS.netPrice] = String(salePrice);
-  if (shippingPrice) columnValuesPayload[ORDER_COLUMNS.shippingPrice] = String(shippingPrice);
 
   await mondayRequest(apiKey, mutation, {
     boardId,
@@ -195,6 +194,7 @@ export async function POST(request: NextRequest) {
 
     const productJson = JSON.stringify(storedOrderData);
 
+    // Opprett rad i Monday med ALLE kundedata fylt ut med en gang
     await createPendingOrderInMonday({
       apiKey: mondayApiKey,
       boardId: orderBoardId,

@@ -198,7 +198,13 @@ async function findMondayOrder(
         item,
         ORDER_COLUMNS.vippsOrderId
       )?.text?.trim();
-      return orderNumber === reference || vippsOrderId === reference;
+      const itemName = item.name || '';
+      
+      return (
+        orderNumber === reference ||
+        vippsOrderId === reference ||
+        itemName.includes(reference)
+      );
     });
 
     if (match) return match;
@@ -446,7 +452,6 @@ export async function POST(request: NextRequest) {
     }
 
     const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
-    const customer = storedOrder.customer;
 
     const updatePayload: Record<string, unknown> = {
       [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
@@ -455,14 +460,6 @@ export async function POST(request: NextRequest) {
       [ORDER_COLUMNS.stockUpdated]: { checked: 'true' },
       [ORDER_COLUMNS.processedDate]: { date: norwegianDate() },
     };
-
-    if (customer.name) updatePayload[ORDER_COLUMNS.customerName] = customer.name;
-    if (customer.email) updatePayload[ORDER_COLUMNS.customerEmail] = { email: customer.email, text: customer.email };
-    if (customer.phone) updatePayload[ORDER_COLUMNS.customerPhone] = { phone: customer.phone, countryShortName: 'NO' };
-    if (customer.address) updatePayload[ORDER_COLUMNS.customerAddress] = customer.address;
-    if (customer.postalCode) updatePayload[ORDER_COLUMNS.customerPostalCode] = customer.postalCode;
-    if (customer.city) updatePayload[ORDER_COLUMNS.customerCity] = customer.city;
-    if (customer.deliveryMethod) updatePayload[ORDER_COLUMNS.deliveryMethod] = { label: customer.deliveryMethod };
 
     await updateMondayOrder({
       apiKey: mondayApiKey,
