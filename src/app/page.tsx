@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX,
-  Loader2, ShieldCheck, CheckCircle2, AlertTriangle, XCircle,
+  Loader2, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, ChevronDown,
 } from 'lucide-react';
 import { Product } from '@/lib/monday';
 import CheckoutModal from '@/components/CheckoutModal';
@@ -144,32 +144,52 @@ export default function HomePage() {
     return { text: `${stock} på lager`, wrapperClass: 'bg-green-50 text-green-700 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> };
   };
 
+  const scrollToProducts = () => {
+    const el = document.getElementById('produkter');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <header className="z-50 bg-neutral-900 px-4 py-2 text-sm text-white"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row"><div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"><span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-red-600" />Verkstedveien 2, 8402 Sortland</span><span className="flex items-center gap-1"><Phone className="h-4 w-4 text-red-600" />76 12 13 60</span><span className="flex items-center gap-1"><Mail className="h-4 w-4 text-red-600" />sortland@eiksenteret.no</span></div><div className="text-xs text-gray-400">Org.nr: 936 858 031 | Eiksenteret Sortland</div></div></header>
       <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-[0_3px_12px_rgba(0,0,0,0.06)]"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
+      
+      {/* Hero-seksjon */}
       <section className="mx-auto w-full max-w-7xl px-4 pb-2 pt-4">
-        <div className="relative h-[280px] overflow-hidden rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.08)] sm:h-[320px]">
+        <div className="relative h-[300px] overflow-hidden rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.08)] sm:h-[340px]">
           <img
             src="/EiksenteretSortland.png"
             alt="Eiksenteret Sortland Butikk"
             className="h-full w-full object-cover object-[center_65%]"
           />
-          <div className="absolute inset-0 flex items-center justify-end bg-gradient-to-l from-black/90 via-black/60 to-black/10 p-6 md:p-10 md:pr-16">
+          <div className="absolute inset-0 flex items-center justify-end bg-gradient-to-l from-black/90 via-black/65 to-black/15 p-6 md:p-10 md:pr-16">
             <div className="max-w-xl text-right text-white">
               <span className="mb-2 inline-block rounded bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
                 Velkommen til Tilbudsboden.no
               </span>
-              <h2 className="mb-2 text-xl font-extrabold tracking-tight text-white md:text-4xl">
-                Restpartier, kampanjevarer og gode kjøp
+              <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-white md:text-4xl">
+                Demovarer, restpartier og kampanjevarer
               </h2>
-              <p className="hidden text-sm leading-relaxed text-gray-100 sm:block">
-                Her finner du restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp direkte fra lageret og butikken vår på Sortland.
+              <p className="mb-6 text-sm leading-relaxed text-gray-100 sm:text-base">
+                Demovarer, restpartier og kampanjevarer til ekstra gode priser. Hent i butikk eller få levert hjem.
               </p>
+              <div>
+                <button
+                  type="button"
+                  onClick={scrollToProducts}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-6 py-3 text-sm font-extrabold text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0"
+                >
+                  <span>🟧 Se alle tilbud</span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
       <section className="mx-auto w-full max-w-7xl px-4 pt-4">
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:justify-center">
           {[
@@ -193,12 +213,74 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-      <main className="mx-auto w-full max-w-7xl flex-grow px-3 py-6 sm:px-4 sm:py-8">
-        <div className="mb-5 flex items-center justify-between sm:mb-8"><h3 className="text-xl font-bold text-gray-900 sm:text-2xl">Aktuelle tilbud</h3><span className="text-xs text-gray-500 sm:text-sm">{products.length} varer tilgjengelig nå</span></div>
-        {loading ? <div className="flex flex-col items-center justify-center gap-2 py-20 text-gray-500"><Loader2 className="h-8 w-8 animate-spin text-red-600" /><p className="text-sm">Laster inn tilbud...</p></div> : products.length === 0 ? <div className="mx-auto max-w-lg rounded-xl border border-gray-200 bg-white p-12 text-center"><PackageX className="mx-auto mb-3 h-12 w-12 text-gray-400" /><h4 className="mb-1 text-lg font-bold text-gray-800">Ingen aktive varer ennå</h4><p className="text-sm text-gray-500">Når en vare blir utsolgt eller en ny vare lagres i Monday, oppdateres listen automatisk.</p></div> : <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">{products.map((product) => <ProductCard key={product.id} product={product} onOpenProduct={(id) => router.push(`/product/${id}`)} onBuyWithVipps={setSelectedProduct} calculateDiscount={calculateDiscount} isNewItem={isNewItem} getStockInfo={getStockInfo} />)}</div>}
+
+      <main id="produkter" className="mx-auto w-full max-w-7xl flex-grow px-3 py-6 sm:px-4 sm:py-8">
+        {/* Fremhevet blikkfang over produktlisten */}
+        <div className="mb-6 flex flex-col items-start justify-between gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center">
+          <h3 className="text-xl font-bold text-gray-900 sm:text-2xl">Aktuelle tilbud</h3>
+          
+          <div className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-extrabold text-amber-900 shadow-sm">
+            <span>🔥</span>
+            <span>{products.length} {products.length === 1 ? 'vare' : 'varer'} på tilbud akkurat nå</span>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-20 text-gray-500">
+            <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+            <p className="text-sm">Laster inn tilbud...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="mx-auto max-w-lg rounded-xl border border-gray-200 bg-white p-12 text-center">
+            <PackageX className="mx-auto mb-3 h-12 w-12 text-gray-400" />
+            <h4 className="mb-1 text-lg font-bold text-gray-800">Ingen aktive varer ennå</h4>
+            <p className="text-sm text-gray-500">Når en vare blir utsolgt eller en ny vare lagres i Monday, oppdateres listen automatisk.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onOpenProduct={(id) => router.push(`/product/${id}`)}
+                onBuyWithVipps={setSelectedProduct}
+                calculateDiscount={calculateDiscount}
+                isNewItem={isNewItem}
+                getStockInfo={getStockInfo}
+              />
+            ))}
+          </div>
+        )}
       </main>
+
       {selectedProduct && <CheckoutModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSuccess={loadProducts} />}
-      <footer className="mt-12 border-t border-neutral-800 bg-neutral-900 py-12 text-sm text-gray-400"><div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-3"><div><div className="mb-4 inline-block rounded-lg bg-white p-2"><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-8 object-contain" /></div><p className="mb-1 font-semibold text-white">Eiksenteret Sortland</p><p className="mb-1">Verkstedveien 2, 8402 Sortland</p><p className="mb-1">Telefon: 76 12 13 60</p><p>E-post: sortland@eiksenteret.no</p></div><div><h5 className="mb-3 text-base font-bold text-white">Om Tilbudsboden.no</h5><p className="mb-3 text-xs leading-relaxed">Tilbudsboden.no er Eiksenteret Sortland sin nettkanal for salg av restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp. Registrert org.nr: 936 858 031.</p><button onClick={() => router.push('/vilkar')} className="flex items-center gap-1 text-xs font-bold text-red-500 underline hover:text-red-400"><ShieldCheck className="h-4 w-4" />Les våre fullstendige Salgsvilkår</button></div><div><h5 className="mb-3 text-base font-bold text-white">Betaling & Forbehold</h5><p className="mb-2 text-xs leading-relaxed">Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt blir klargjort for enten henting i butikk i Verkstedveien 2 eller sending per post.</p><p className="mb-2 text-[11px] font-medium leading-relaxed text-gray-500">Alle priser på Tilbudsboden.no er oppgitt inkl. mva.</p><p className="border-t border-neutral-800 pt-2 text-[11px] italic leading-relaxed text-gray-500"><strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilprising, spesifikasjonsendringer og at varer kan være utsolgt ved mellomdagssalg i butikk.</p></div></div></footer>
+      
+      <footer className="mt-12 border-t border-neutral-800 bg-neutral-900 py-12 text-sm text-gray-400">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-3">
+          <div>
+            <div className="mb-4 inline-block rounded-lg bg-white p-2">
+              <img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-8 object-contain" />
+            </div>
+            <p className="mb-1 font-semibold text-white">Eiksenteret Sortland</p>
+            <p className="mb-1">Verkstedveien 2, 8402 Sortland</p>
+            <p className="mb-1">Telefon: 76 12 13 60</p>
+            <p>E-post: sortland@eiksenteret.no</p>
+          </div>
+          <div>
+            <h5 className="mb-3 text-base font-bold text-white">Om Tilbudsboden.no</h5>
+            <p className="mb-3 text-xs leading-relaxed">Tilbudsboden.no er Eiksenteret Sortland sin nettkanal for salg av restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp. Registrert org.nr: 936 858 031.</p>
+            <button onClick={() => router.push('/vilkar')} className="flex items-center gap-1 text-xs font-bold text-red-500 underline hover:text-red-400">
+              <ShieldCheck className="h-4 w-4" />Les våre fullstendige Salgsvilkår
+            </button>
+          </div>
+          <div>
+            <h5 className="mb-3 text-base font-bold text-white">Betaling & Forbehold</h5>
+            <p className="mb-2 text-xs leading-relaxed">Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt blir klargjort for enten henting i butikk i Verkstedveien 2 eller sending per post.</p>
+            <p className="mb-2 text-[11px] font-medium leading-relaxed text-gray-500">Alle priser på Tilbudsboden.no er oppgitt inkl. mva.</p>
+            <p className="border-t border-neutral-800 pt-2 text-[11px] italic leading-relaxed text-gray-500"><strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilprising, spesifikasjonsendringer og at varer kan være utsolgt ved mellomdagssalg i butikk.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
