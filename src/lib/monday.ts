@@ -36,6 +36,10 @@ interface MondayItem {
   id: string;
   name: string;
   created_at?: string | null;
+  group?: {
+    id?: string | null;
+    title?: string | null;
+  } | null;
   updates?: Array<{
     body?: string | null;
   }>;
@@ -78,6 +82,10 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
             id
             name
             created_at
+            group {
+              id
+              title
+            }
             updates(limit: 1) {
               body
             }
@@ -189,13 +197,18 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
             : '';
         };
 
+        // 1. Sjekk at varen ligger i gruppen "Aktive produkter"
+        const groupTitle = item.group?.title?.trim().toLowerCase() || '';
+        const isInActiveGroup = groupTitle === 'aktive produkter';
+
+        // 2. Sjekk at Status-kolonnen står til "Aktiv"
         const status = getColumnValue('Status');
-        const normalizedStatus = status.toLowerCase();
+        const isStatusActive = status.toLowerCase() === 'aktiv';
+
+        // Kun varer i gruppen "Aktive produkter" MED status "Aktiv" tillates i nettbutikken
+        if (!isInActiveGroup || !isStatusActive) return null;
+
         const stock = parseNorwegianNumber(getColumnValue('Lager'));
-
-        const isActive = normalizedStatus === 'aktiv';
-
-        if (!isActive) return null;
 
         const latestUpdateHtml =
           item.updates?.[0]?.body ||
