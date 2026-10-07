@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BRING_BOOKING_URL = 'https://api.bring.com/booking/api/create';
 const BRING_PRODUCT_ID = '5800';
-const SENT_GROUP_ID = 'group_mm73mky8';
+
+// Gruppe-ID for 'Betalt' i stedet for 'Sendt / Hentet'
+const PAID_GROUP_ID = 'group_mm73ae8b';
 
 const ORDER_COLUMNS = {
   orderNumber: 'text_mm73e37c',
@@ -178,10 +180,10 @@ async function findOrder(
     });
     const page = data?.data?.boards?.[0]?.items_page;
     const items: MondayOrderItem[] = page?.items || [];
-    const found = items.find(
-      (item) =>
-        getColumn(item, ORDER_COLUMNS.orderNumber)?.text?.trim() === orderId
-    );
+    const found = items.find((item) => {
+      const colText = getColumn(item, ORDER_COLUMNS.orderNumber)?.text?.trim();
+      return colText === orderId || item.name.includes(orderId);
+    });
     if (found) return found;
     cursor = page?.cursor || null;
   } while (cursor);
@@ -248,7 +250,7 @@ async function updateOrderAfterBooking(params: {
         item_id: $itemId
         column_values: $values
       ) { id }
-      move_item_to_group(item_id: $itemId, group_id: "${SENT_GROUP_ID}") {
+      move_item_to_group(item_id: $itemId, group_id: "${PAID_GROUP_ID}") {
         id
       }
     }
@@ -263,7 +265,8 @@ async function updateOrderAfterBooking(params: {
         url: params.labelUrl,
         text: 'Åpne Bring-etikett',
       },
-      [ORDER_COLUMNS.orderStatus]: { label: 'Sendt' },
+      [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
+      [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
     }),
   });
 }
@@ -320,14 +323,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const paymentStatus = getColumn(
-      orderItem,
-      ORDER_COLUMNS.paymentStatus
-    )?.text?.trim();
-    if (paymentStatus?.toLowerCase() !== 'betalt') {
-      return jsonError('Ordren er ikke markert som Betalt i Monday.', 409);
-    }
-
     const jsonText = parseLongText(
       getColumn(orderItem, ORDER_COLUMNS.productJson)
     );
@@ -361,7 +356,6 @@ export async function POST(request: NextRequest) {
       storedOrder.product.id
     );
 
-    // Maksimalt 35 tegn for goodsDescription i Bring API
     const safeGoodsDescription = (storedOrder.product.name || 'Vare').slice(0, 35);
 
     const correlationId = `${orderId}-${Date.now()}`;
@@ -463,30 +457,24 @@ export async function POST(request: NextRequest) {
       return jsonError('Bring-responsen mangler sporingsnummer eller etikett.', 502);
     }
 
-    // I testmodus oppretter Bring en testsending, men Monday endres ikke.
-    if (!testMode) {
-      await updateOrderAfterBooking({
-        apiKey: mondayApiKey,
-        boardId: orderBoardId,
-        itemId: orderItem.id,
-        trackingNumber,
-        labelUrl,
-      });
-    }
+    await updateOrderAfterBooking({
+      apiKey: mondayApiKey,
+      boardId: orderBoardId,
+      itemId: orderItem.id,
+      trackingNumber,
+      labelUrl,
+    });
 
     return NextResponse.json({
       success: true,
       testMode,
-      mondayUpdated: !testMode,
       orderId,
       mondayItemId: orderItem.id,
       consignmentNumber,
       trackingNumber,
       trackingUrl,
       labelUrl,
-      message: testMode
-        ? 'Testsending opprettet. Monday ble ikke endret.'
-        : 'Bring-sending opprettet og Monday oppdatert.',
+      message: 'Bring-sending opprettet og oppdatert i Monday.',
     });
   } catch (error) {
     console.error('Feil i /api/bring/create-shipment:', error);

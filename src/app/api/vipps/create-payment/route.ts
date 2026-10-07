@@ -1,26 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createVippsPaymentOrder } from '@/lib/vipps';
 
-const ORDER_COLUMNS = {
-  orderNumber: 'text_mm73e37c',
-  vippsOrderId: 'text_mm73k8jh',
-  paymentStatus: 'color_mm73ta14',
-  orderStatus: 'color_mm73zcsm',
-  vippsStatus: 'color_mm73pqa6',
-  stockUpdated: 'boolean_mm73w05',
-  productJson: 'long_text_mm73r6vx',
-  customerName: 'text_mm73x8e9',
-  customerEmail: 'email_mm73y45r',
-  customerPhone: 'phone_mm73k941',
-  customerAddress: 'text_mm73m33l',
-  customerPostalCode: 'text_mm73p89n',
-  customerCity: 'text_mm73z69p',
-  deliveryMethod: 'color_mm73w78m',
-  productName: 'text_mm73c41k',
-  netPrice: 'numeric_mm73d91l',
-  shippingPrice: 'numeric_mm73m87p',
-} as const;
-
 function getInternalBaseUrl(request: NextRequest): string {
   return request.nextUrl.origin.replace(/\/+$/, '');
 }
@@ -54,76 +34,49 @@ async function mondayRequest(
   return data;
 }
 
-async function createPendingOrderInMonday(params: {
-  apiKey: string;
-  boardId: string;
-  orderId: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  customerAddress: string;
-  customerPostalCode: string;
-  customerCity: string;
-  deliveryMethod: string;
-  productName: string;
-  salePrice: number;
-  shippingPrice: number;
-  productJson: string;
-}) {
-  const {
-    apiKey,
-    boardId,
-    orderId,
-    customerName,
-    customerEmail,
-    customerPhone,
-    customerAddress,
-    customerPostalCode,
-    customerCity,
-    deliveryMethod,
-    productName,
-    salePrice,
-    shippingPrice,
-    productJson,
-  } = params;
-
-  const mutation = `
-    mutation CreateOrder(
-      $boardId: ID!
-      $itemName: String!
-      $columnValues: JSON!
-    ) {
-      create_item(
-        board_id: $boardId
-        item_name: $itemName
-        column_values: $columnValues
-      ) { id }
+async function getBoardColumnMapping(apiKey: string, boardId: string) {
+  const query = `
+    query GetBoardColumns($boardIds: [ID!]!) {
+      boards(ids: $boardIds) {
+        columns {
+          id
+          title
+          type
+        }
+      }
     }
   `;
 
-  const columnValuesPayload: Record<string, unknown> = {
-    [ORDER_COLUMNS.orderNumber]: orderId,
-    [ORDER_COLUMNS.vippsOrderId]: orderId,
-    [ORDER_COLUMNS.paymentStatus]: { label: 'Venter' },
-    [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
-    [ORDER_COLUMNS.productJson]: productJson,
-    [ORDER_COLUMNS.customerName]: customerName,
-    [ORDER_COLUMNS.customerEmail]: { email: customerEmail, text: customerEmail },
-    [ORDER_COLUMNS.customerPhone]: { phone: customerPhone, countryShortName: 'NO' },
-    [ORDER_COLUMNS.customerAddress]: customerAddress,
-    [ORDER_COLUMNS.customerPostalCode]: customerPostalCode,
-    [ORDER_COLUMNS.customerCity]: customerCity,
-    [ORDER_COLUMNS.deliveryMethod]: { label: deliveryMethod },
-    [ORDER_COLUMNS.productName]: productName,
-    [ORDER_COLUMNS.netPrice]: String(salePrice),
-    [ORDER_COLUMNS.shippingPrice]: String(shippingPrice),
+  const data = await mondayRequest(apiKey, query, { boardIds: [boardId] });
+  const columns: Array<{ id: string; title: string; type: string }> =
+    data?.data?.boards?.[0]?.columns || [];
+
+  const findId = (titleName: string) => {
+    const match = columns.find(
+      (col) => col.title.trim().toLowerCase() === titleName.trim().toLowerCase()
+    );
+    return match ? match.id : null;
   };
 
-  await mondayRequest(apiKey, mutation, {
-    boardId,
-    itemName: `Ordre ${orderId} - ${customerName}`,
-    columnValues: JSON.stringify(columnValuesPayload),
-  });
+  return {
+    orderNumber: findId('Ordrenummer') || 'text_mm73e37c',
+    vippsOrderId: findId('Vipps Ordre-ID') || 'text_mm73k8jh',
+    paymentStatus: findId('Betalingsstatus') || 'color_mm73ta14',
+    orderStatus: findId('Ordrestatus') || 'color_mm73zcsm',
+    vippsStatus: findId('Vipps Status') || 'color_mm73pqa6',
+    customerName: findId('Kunde') || 'text_mm73x8e9',
+    customerEmail: findId('E-post') || 'email_mm73y45r',
+    customerPhone: findId('Telefon') || 'phone_mm73k941',
+    customerAddress: findId('Adresse') || 'text_mm73m33l',
+    customerPostalCode: findId('Postnummer') || 'text_mm73p89n',
+    customerCity: findId('Poststed') || 'text_mm73z69p',
+    deliveryMethod: findId('Leveringsmåte') || 'color_mm73w78m',
+    productName: findId('Produktnavn') || 'text_mm73c41k',
+    itemNumber: findId('Varenummer') || 'text_mm73vnum',
+    netPrice: findId('Nettpris') || 'numeric_mm73d91l',
+    shippingPrice: findId('Frakt') || 'numeric_mm73m87p',
+    productJson: findId('Produkt JSON') || 'long_text_mm73r6vx',
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -173,7 +126,7 @@ export async function POST(request: NextRequest) {
         shippingPrice,
         totalPrice,
         stock: product.stock,
-        itemNumber: product.itemNumber,
+        itemNumber: product.itemNumber || '',
         weight: product.weight,
       },
       customer: {
@@ -194,22 +147,69 @@ export async function POST(request: NextRequest) {
 
     const productJson = JSON.stringify(storedOrderData);
 
-    // Opprett rad i Monday med ALLE kundedata fylt ut med en gang
-    await createPendingOrderInMonday({
-      apiKey: mondayApiKey,
+    // Hent dynamisk oppslag for kolonne-ID-er basert på faktiske kolonnenavn i Monday
+    const cols = await getBoardColumnMapping(mondayApiKey, orderBoardId);
+
+    const columnValuesPayload: Record<string, unknown> = {
+      [cols.orderNumber]: orderId,
+      [cols.vippsOrderId]: orderId,
+      [cols.paymentStatus]: { label: 'Venter' },
+      [cols.orderStatus]: { label: 'Venter på betaling' },
+      [cols.productJson]: productJson,
+    };
+
+    if (customer.name && cols.customerName) {
+      columnValuesPayload[cols.customerName] = customer.name;
+    }
+    if (customer.email && cols.customerEmail) {
+      columnValuesPayload[cols.customerEmail] = { email: customer.email, text: customer.email };
+    }
+    if (customer.phone && cols.customerPhone) {
+      columnValuesPayload[cols.customerPhone] = { phone: customer.phone, countryShortName: 'NO' };
+    }
+    if (customer.address && cols.customerAddress) {
+      columnValuesPayload[cols.customerAddress] = customer.address;
+    }
+    if (customer.postalCode && cols.customerPostalCode) {
+      columnValuesPayload[cols.customerPostalCode] = customer.postalCode;
+    }
+    if (customer.city && cols.customerCity) {
+      columnValuesPayload[cols.customerCity] = customer.city;
+    }
+    if (deliveryMethod && cols.deliveryMethod) {
+      columnValuesPayload[cols.deliveryMethod] = { label: deliveryMethod };
+    }
+    if (product.name && cols.productName) {
+      columnValuesPayload[cols.productName] = product.name;
+    }
+    if (product.itemNumber && cols.itemNumber) {
+      columnValuesPayload[cols.itemNumber] = product.itemNumber;
+    }
+    if (salePrice && cols.netPrice) {
+      columnValuesPayload[cols.netPrice] = String(salePrice);
+    }
+    if (cols.shippingPrice) {
+      columnValuesPayload[cols.shippingPrice] = String(shippingPrice);
+    }
+
+    const mutation = `
+      mutation CreateOrder(
+        $boardId: ID!
+        $itemName: String!
+        $columnValues: JSON!
+      ) {
+        create_item(
+          board_id: $boardId
+          item_name: $itemName
+          column_values: $columnValues
+        ) { id }
+      }
+    `;
+
+    await mondayRequest(mondayApiKey, mutation, {
       boardId: orderBoardId,
-      orderId,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
-      customerAddress: customer.address || '',
-      customerPostalCode: customer.postalCode || '',
-      customerCity: customer.city || '',
-      deliveryMethod,
-      productName: product.name,
-      salePrice,
-      shippingPrice,
-      productJson,
+      itemName: `Ordre ${orderId} - ${customer.name}`,
+      columnValues: JSON.stringify(columnValuesPayload),
     });
 
     const baseUrl = getInternalBaseUrl(request);
