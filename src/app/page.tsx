@@ -186,9 +186,9 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={scrollToProducts}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-8 py-3.5 text-base font-black text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-2xl hover:shadow-orange-500/25 active:translate-y-0 sm:text-lg"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#ff8458] to-[#ff5b24] px-8 py-3.5 text-base font-black text-white shadow-[0_8px_25px_rgba(255,91,36,0.35)] ring-1 ring-black/10 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-105 hover:from-[#ff966e] hover:to-[#e54812] hover:shadow-[0_12px_32px_rgba(255,91,36,0.50)] active:translate-y-0 active:scale-100 sm:text-lg"
                 >
-                  <span>Vis tilbudene</span>
+                  <span>🟧 Vis tilbudene</span>
                   <ChevronDown className="h-5 w-5" />
                 </button>
               </div>
