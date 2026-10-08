@@ -46,8 +46,15 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
   const isOutOfStock = stock <= 0;
 
   return (
-    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-md'}`}>
-      
+    <article
+      ref={cardRef}
+      data-product-id={product.id}
+      className={`group relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 ease-out ${
+        isOutOfStock
+          ? 'border-gray-200 opacity-75'
+          : 'border-gray-200/80 hover:-translate-y-1.5 hover:border-red-500/40 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]'
+      }`}
+    >
       {/* Spar-badge */}
       <div className="absolute left-2 top-2 z-10 flex flex-col gap-1 sm:left-3 sm:top-3">
         {discount > 0 && (
@@ -63,15 +70,15 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
       </div>
 
       {/* Produktbilde */}
-      <div onClick={() => onOpenProduct(product.id)} className="group relative flex h-32 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50/50 p-2 sm:h-52 sm:p-4">
-        <img src={product.images?.[0] || '/tilbudsbodenlogo.svg'} alt={product.name} className={`max-h-full max-w-full object-contain transition-transform duration-300 ${isOutOfStock ? 'grayscale' : 'group-hover:scale-105'}`} onError={(event) => { event.currentTarget.src = '/tilbudsbodenlogo.svg'; }} />
+      <div onClick={() => onOpenProduct(product.id)} className="relative flex h-32 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50/50 p-2 sm:h-52 sm:p-4">
+        <img src={product.images?.[0] || '/tilbudsbodenlogo.svg'} alt={product.name} className={`max-h-full max-w-full object-contain transition-transform duration-300 ease-out ${isOutOfStock ? 'grayscale' : 'group-hover:scale-105'}`} onError={(event) => { event.currentTarget.src = '/tilbudsbodenlogo.svg'; }} />
       </div>
 
       {/* Produktinnhold */}
       <div className="flex flex-grow flex-col justify-between p-2.5 sm:p-4">
         <div>
           <div className="mb-0.5 truncate text-[9px] font-medium text-gray-400 sm:text-xs">Varenr: {product.itemNumber}</div>
-          <h4 onClick={() => onOpenProduct(product.id)} className="mb-1.5 line-clamp-2 min-h-[2.2rem] cursor-pointer text-xs font-bold leading-tight text-gray-900 hover:text-red-600 sm:min-h-[2.6rem] sm:text-base">{product.name}</h4>
+          <h4 onClick={() => onOpenProduct(product.id)} className="mb-1.5 line-clamp-2 min-h-[2.2rem] cursor-pointer text-xs font-bold leading-tight text-gray-900 transition-colors group-hover:text-red-600 sm:min-h-[2.6rem] sm:text-base">{product.name}</h4>
           <p className="mb-3 hidden line-clamp-2 text-xs text-gray-600 sm:block">{product.shortInfo}</p>
         </div>
 
@@ -88,7 +95,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
           </div>
 
           {/* Pris-boks */}
-          <div className="flex items-center justify-between gap-1 rounded-lg border border-gray-200/80 bg-gray-50 p-2 sm:p-3">
+          <div className="flex items-center justify-between gap-1 rounded-lg border border-gray-200/80 bg-gray-50 p-2 transition-colors group-hover:bg-gray-100/60 sm:p-3">
             <div className="flex min-w-0 flex-col justify-center">
               <span className="text-xs font-black leading-none text-red-600 sm:text-xl">
                 {product.salePrice.toLocaleString('no-NO')}&nbsp;kr
@@ -100,12 +107,12 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
               )}
             </div>
 
-            {/* Vipps-knapp med ekstra glow, økt padding og spenstig klikk-effekt */}
+            {/* Vipps-knapp */}
             <button
               type="button"
               onClick={() => onBuyWithVipps(product)}
               disabled={isOutOfStock}
-              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-3 py-2 text-[10px] font-black text-white shadow-[0_4px_14px_rgba(255,91,36,0.38)] ring-1 ring-black/5 transition-all duration-200 ease-out hover:-translate-y-1 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_8px_22px_rgba(255,91,36,0.48)] hover:ring-2 hover:ring-orange-300/40 active:translate-y-0 active:scale-[0.98] active:shadow-[0_2px_8px_rgba(255,91,36,0.25)] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
+              className="flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-3 py-2 text-[10px] font-black text-white shadow-[0_4px_14px_rgba(255,91,36,0.38)] ring-1 ring-black/5 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_8px_22px_rgba(255,91,36,0.48)] hover:ring-2 hover:ring-orange-300/40 active:translate-y-0 active:scale-[0.98] active:shadow-[0_2px_8px_rgba(255,91,36,0.25)] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
             >
               <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>{isOutOfStock ? 'Utsolgt' : 'Vipps'}</span>
