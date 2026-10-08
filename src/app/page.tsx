@@ -48,15 +48,15 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
   return (
     <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-md'}`}>
       
-      {/* Badges i toppen av bildet */}
-      <div className="absolute left-1.5 top-1.5 z-10 flex flex-col gap-1 sm:left-3 sm:top-3">
+      {/* Badges med markert dropshadow og kontrasterende kantlinje */}
+      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1 sm:left-3 sm:top-3">
         {discount > 0 && (
-          <span className="inline-flex items-center rounded bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm sm:rounded-md sm:px-2.5 sm:py-1 sm:text-xs">
+          <span className="inline-flex items-center rounded border border-white/30 bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2 py-0.5 text-[9px] font-black uppercase text-white shadow-[0_2px_8px_rgba(0,0,0,0.22)] sm:rounded-md sm:px-2.5 sm:py-1 sm:text-xs">
             🔥 SPAR {savings.toLocaleString('no-NO')} KR
           </span>
         )}
         {isNewItem(product.createdAt) && (
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm sm:rounded-md sm:text-xs">
+          <span className="inline-flex items-center gap-1 rounded border border-white/30 bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] sm:rounded-md sm:text-xs">
             <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />NY
           </span>
         )}
@@ -76,7 +76,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
         </div>
 
         <div>
-          {/* Kompakt og ren statuslinje for mobil */}
+          {/* Statuslinje */}
           <div className="mb-2 flex items-center gap-1 text-[10px] text-gray-600 sm:gap-1.5 sm:text-xs">
             <span className="truncate font-medium text-gray-500">
               {product.pickupOnly ? 'Må hentes' : 'Post/Henting'}
@@ -87,9 +87,9 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
             </span>
           </div>
 
-          {/* Pris- og Vipps-seksjon med to tydelige spalter */}
+          {/* Pris- og Vipps-seksjon */}
           <div className="flex items-center justify-between gap-1 rounded-lg border border-gray-100 bg-gray-50/80 p-2 sm:p-3">
-            <div className="flex flex-col justify-center min-w-0">
+            <div className="flex min-w-0 flex-col justify-center">
               <span className="text-xs font-black leading-none text-red-600 sm:text-xl">
                 {product.salePrice.toLocaleString('no-NO')}&nbsp;kr
               </span>
@@ -100,11 +100,12 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
               )}
             </div>
 
+            {/* Vipps-knapp med taktil glødeskygge, hover-løft og klikkrespons */}
             <button
               type="button"
               onClick={() => onBuyWithVipps(product)}
               disabled={isOutOfStock}
-              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-2 py-1.5 text-[10px] font-black text-white shadow-[0_2px_8px_rgba(255,91,36,0.25)] ring-1 ring-black/5 transition-all duration-200 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
+              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-2.5 py-1.5 text-[10px] font-black text-white shadow-[0_4px_12px_rgba(255,91,36,0.30)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_6px_16px_rgba(255,91,36,0.40)] active:translate-y-0 active:shadow-sm disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
             >
               <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>{isOutOfStock ? 'Utsolgt' : 'Vipps'}</span>
