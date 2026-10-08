@@ -48,7 +48,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
   return (
     <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-md'}`}>
       
-      {/* 2. Spar-badge – bedre dybde og "merkelapp-følelse" */}
+      {/* Spar-badge */}
       <div className="absolute left-2 top-2 z-10 flex flex-col gap-1 sm:left-3 sm:top-3">
         {discount > 0 && (
           <span className="inline-flex items-center rounded border border-white/40 bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2 py-0.5 text-[9px] font-black uppercase text-white shadow-[0_3px_10px_rgba(0,0,0,0.28)] sm:rounded-md sm:px-2.5 sm:py-1 sm:text-xs">
@@ -87,7 +87,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
             </span>
           </div>
 
-          {/* 3. Pris-boksen – bedre kontrast */}
+          {/* Pris-boks */}
           <div className="flex items-center justify-between gap-1 rounded-lg border border-gray-200/80 bg-gray-50 p-2 sm:p-3">
             <div className="flex min-w-0 flex-col justify-center">
               <span className="text-xs font-black leading-none text-red-600 sm:text-xl">
@@ -100,12 +100,12 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
               )}
             </div>
 
-            {/* 1. Vipps-knappen – sterkere skygge + tydeligere hover */}
+            {/* Vipps-knapp med ekstra glow, økt padding og spenstig klikk-effekt */}
             <button
               type="button"
               onClick={() => onBuyWithVipps(product)}
               disabled={isOutOfStock}
-              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-2 py-1.5 text-[10px] font-black text-white shadow-[0_4px_14px_rgba(255,91,36,0.35)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-1 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_8px_20px_rgba(255,91,36,0.45)] active:translate-y-0 active:shadow-[0_2px_8px_rgba(255,91,36,0.25)] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
+              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-3 py-2 text-[10px] font-black text-white shadow-[0_4px_14px_rgba(255,91,36,0.38)] ring-1 ring-black/5 transition-all duration-200 ease-out hover:-translate-y-1 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_8px_22px_rgba(255,91,36,0.48)] hover:ring-2 hover:ring-orange-300/40 active:translate-y-0 active:scale-[0.98] active:shadow-[0_2px_8px_rgba(255,91,36,0.25)] disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none disabled:hover:translate-y-0 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
             >
               <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>{isOutOfStock ? 'Utsolgt' : 'Vipps'}</span>
