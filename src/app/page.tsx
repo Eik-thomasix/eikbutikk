@@ -46,16 +46,19 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
   const isOutOfStock = stock <= 0;
 
   return (
-    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 sm:rounded-xl ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:-translate-y-1 hover:shadow-md'}`}>
-      {/* Badges i toppen */}
-      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1 sm:left-3 sm:top-3 sm:gap-1.5">
+    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 sm:rounded-xl ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-md'}`}>
+      
+      {/* SPAR-badge & NY-badge med definert skygge og konsistent plassering */}
+      <div className="absolute left-3 top-3 z-10 flex flex-col gap-1.5">
         {discount > 0 && (
-          <span className="inline-flex items-center rounded-md bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2 py-0.5 text-[9px] font-black uppercase text-white shadow-sm sm:px-2.5 sm:py-1 sm:text-xs">
+          <span className="inline-flex items-center rounded-md border border-white/30 bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2.5 py-1 text-[10px] font-black uppercase text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] sm:px-3 sm:py-1.5 sm:text-xs">
             🔥 SPAR {savings.toLocaleString('no-NO')} KR
           </span>
         )}
         {isNewItem(product.createdAt) && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm sm:px-2.5 sm:text-xs"><Clock className="h-3 w-3" />NY</span>
+          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(0,0,0,0.12)] sm:text-xs">
+            <Clock className="h-3 w-3" />NY
+          </span>
         )}
       </div>
 
@@ -65,7 +68,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
       </div>
 
       {/* Produktinnhold */}
-      <div className="flex flex-grow flex-col justify-between p-2.5 sm:p-4">
+      <div className="flex flex-grow flex-col justify-between p-3 sm:p-4">
         <div>
           <div className="mb-0.5 truncate text-[10px] font-medium text-gray-400 sm:text-xs">Varenr: {product.itemNumber}</div>
           <h4 onClick={() => onOpenProduct(product.id)} className="mb-2 line-clamp-2 min-h-[2.2rem] cursor-pointer text-xs font-bold leading-tight text-gray-900 hover:text-red-600 sm:min-h-[2.6rem] sm:text-base">{product.name}</h4>
@@ -73,8 +76,8 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
         </div>
 
         <div>
-          {/* Kompakt og ryddig statuslinje på én enkelt linje for mobil */}
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] text-gray-600 sm:text-xs">
+          {/* Kompakt og ren statuslinje for mobil */}
+          <div className="mb-2.5 flex items-center gap-1.5 text-[10px] text-gray-600 sm:text-xs">
             <span className="font-medium text-gray-500">
               {product.pickupOnly ? 'Må hentes' : 'Post/Henting'}
             </span>
@@ -85,27 +88,28 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
           </div>
 
           {/* Seksjon for Pris og Vipps-knapp */}
-          <div className="flex items-center justify-between gap-1.5 rounded-lg border border-gray-100 bg-gray-50/80 p-2 sm:p-3">
-            {/* Pris og veil. pris til venstre */}
+          <div className="flex items-center justify-between gap-1.5 rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 sm:p-3">
+            {/* Pris og oppgradert Veil. pris */}
             <div className="flex min-w-0 flex-col justify-center">
               <span className="text-sm font-black leading-none text-red-600 sm:text-2xl">
                 {product.salePrice.toLocaleString('no-NO')}&nbsp;kr
               </span>
               {product.listPrice > product.salePrice && (
-                <div className="mt-0.5 flex items-center gap-1 text-[9px] text-gray-400 sm:text-xs">
+                <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-gray-600 sm:text-xs">
+                  <span>Veil.</span>
                   <span className="line-through">{product.listPrice.toLocaleString('no-NO')} kr</span>
                 </div>
               )}
             </div>
 
-            {/* Vipps-knapp til høyre */}
+            {/* Vipps-knapp med optimalisert skygge, fylling og interaksjon */}
             <button
               type="button"
               onClick={() => onBuyWithVipps(product)}
               disabled={isOutOfStock}
-              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-2.5 py-1.5 text-[11px] font-extrabold text-white shadow-sm ring-1 ring-black/5 transition-all duration-200 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
+              className="group flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-3 py-2 text-xs font-black text-white shadow-[0_4px_12px_rgba(255,91,36,0.30)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_6px_18px_rgba(255,91,36,0.40)] active:translate-y-0 active:shadow-sm disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
             >
-              <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
+              <ShoppingBag className="h-3.5 w-3.5 transition-transform duration-200 group-hover:scale-110 sm:h-4 sm:w-4" />
               <span>{isOutOfStock ? 'Utsolgt' : 'Vipps'}</span>
             </button>
           </div>
