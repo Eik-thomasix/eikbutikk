@@ -46,70 +46,67 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
   const isOutOfStock = stock <= 0;
 
   return (
-    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 sm:rounded-xl ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-md'}`}>
+    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-md'}`}>
       
-      {/* SPAR-badge & NY-badge med definert skygge og konsistent plassering */}
-      <div className="absolute left-3 top-3 z-10 flex flex-col gap-1.5">
+      {/* Badges i toppen av bildet */}
+      <div className="absolute left-1.5 top-1.5 z-10 flex flex-col gap-1 sm:left-3 sm:top-3">
         {discount > 0 && (
-          <span className="inline-flex items-center rounded-md border border-white/30 bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2.5 py-1 text-[10px] font-black uppercase text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] sm:px-3 sm:py-1.5 sm:text-xs">
+          <span className="inline-flex items-center rounded bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm sm:rounded-md sm:px-2.5 sm:py-1 sm:text-xs">
             🔥 SPAR {savings.toLocaleString('no-NO')} KR
           </span>
         )}
         {isNewItem(product.createdAt) && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(0,0,0,0.12)] sm:text-xs">
-            <Clock className="h-3 w-3" />NY
+          <span className="inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm sm:rounded-md sm:text-xs">
+            <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />NY
           </span>
         )}
       </div>
 
       {/* Produktbilde */}
-      <div onClick={() => onOpenProduct(product.id)} className="group relative flex h-36 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50/50 p-2 sm:h-52 sm:p-4">
+      <div onClick={() => onOpenProduct(product.id)} className="group relative flex h-32 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50/50 p-2 sm:h-52 sm:p-4">
         <img src={product.images?.[0] || '/tilbudsbodenlogo.svg'} alt={product.name} className={`max-h-full max-w-full object-contain transition-transform duration-300 ${isOutOfStock ? 'grayscale' : 'group-hover:scale-105'}`} onError={(event) => { event.currentTarget.src = '/tilbudsbodenlogo.svg'; }} />
       </div>
 
       {/* Produktinnhold */}
-      <div className="flex flex-grow flex-col justify-between p-3 sm:p-4">
+      <div className="flex flex-grow flex-col justify-between p-2.5 sm:p-4">
         <div>
-          <div className="mb-0.5 truncate text-[10px] font-medium text-gray-400 sm:text-xs">Varenr: {product.itemNumber}</div>
-          <h4 onClick={() => onOpenProduct(product.id)} className="mb-2 line-clamp-2 min-h-[2.2rem] cursor-pointer text-xs font-bold leading-tight text-gray-900 hover:text-red-600 sm:min-h-[2.6rem] sm:text-base">{product.name}</h4>
+          <div className="mb-0.5 truncate text-[9px] font-medium text-gray-400 sm:text-xs">Varenr: {product.itemNumber}</div>
+          <h4 onClick={() => onOpenProduct(product.id)} className="mb-1.5 line-clamp-2 min-h-[2.2rem] cursor-pointer text-xs font-bold leading-tight text-gray-900 hover:text-red-600 sm:min-h-[2.6rem] sm:text-base">{product.name}</h4>
           <p className="mb-3 hidden line-clamp-2 text-xs text-gray-600 sm:block">{product.shortInfo}</p>
         </div>
 
         <div>
           {/* Kompakt og ren statuslinje for mobil */}
-          <div className="mb-2.5 flex items-center gap-1.5 text-[10px] text-gray-600 sm:text-xs">
-            <span className="font-medium text-gray-500">
+          <div className="mb-2 flex items-center gap-1 text-[10px] text-gray-600 sm:gap-1.5 sm:text-xs">
+            <span className="truncate font-medium text-gray-500">
               {product.pickupOnly ? 'Må hentes' : 'Post/Henting'}
             </span>
             <span className="text-gray-300">•</span>
-            <span className={`inline-flex items-center font-bold ${stock <= 5 ? 'text-orange-600' : 'text-green-700'}`}>
+            <span className={`shrink-0 font-bold ${stock <= 5 ? 'text-orange-600' : 'text-green-700'}`}>
               {stockInfo.text}
             </span>
           </div>
 
-          {/* Seksjon for Pris og Vipps-knapp */}
-          <div className="flex items-center justify-between gap-1.5 rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 sm:p-3">
-            {/* Pris og oppgradert Veil. pris */}
-            <div className="flex min-w-0 flex-col justify-center">
-              <span className="text-sm font-black leading-none text-red-600 sm:text-2xl">
+          {/* Pris- og Vipps-seksjon med to tydelige spalter */}
+          <div className="flex items-center justify-between gap-1 rounded-lg border border-gray-100 bg-gray-50/80 p-2 sm:p-3">
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="text-xs font-black leading-none text-red-600 sm:text-xl">
                 {product.salePrice.toLocaleString('no-NO')}&nbsp;kr
               </span>
               {product.listPrice > product.salePrice && (
-                <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-gray-600 sm:text-xs">
-                  <span>Veil.</span>
-                  <span className="line-through">{product.listPrice.toLocaleString('no-NO')} kr</span>
-                </div>
+                <span className="mt-0.5 text-[9px] font-medium text-gray-600 line-through sm:text-xs">
+                  Veil. {product.listPrice.toLocaleString('no-NO')} kr
+                </span>
               )}
             </div>
 
-            {/* Vipps-knapp med optimalisert skygge, fylling og interaksjon */}
             <button
               type="button"
               onClick={() => onBuyWithVipps(product)}
               disabled={isOutOfStock}
-              className="group flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-3 py-2 text-xs font-black text-white shadow-[0_4px_12px_rgba(255,91,36,0.30)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-[0_6px_18px_rgba(255,91,36,0.40)] active:translate-y-0 active:shadow-sm disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
+              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-2 py-1.5 text-[10px] font-black text-white shadow-[0_2px_8px_rgba(255,91,36,0.25)] ring-1 ring-black/5 transition-all duration-200 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
             >
-              <ShoppingBag className="h-3.5 w-3.5 transition-transform duration-200 group-hover:scale-110 sm:h-4 sm:w-4" />
+              <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>{isOutOfStock ? 'Utsolgt' : 'Vipps'}</span>
             </button>
           </div>
@@ -239,7 +236,7 @@ export default function HomePage() {
             <p className="text-sm text-gray-500">Når en vare blir utsolgt eller en ny vare lagres i Monday, oppdateres listen automatisk.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -279,7 +276,7 @@ export default function HomePage() {
             <h5 className="mb-3 text-base font-bold text-white">Betaling & Forbehold</h5>
             <p className="mb-2 text-xs leading-relaxed">Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt blir klargjort for enten henting i butikk i Verkstedveien 2 eller sending per post.</p>
             <p className="mb-2 text-[11px] font-medium leading-relaxed text-gray-500">Alle priser på Tilbudsboden.no er oppgitt inkl. mva.</p>
-            <p className="border-t border-neutral-800 pt-2 text-[11px] italic leading-relaxed text-gray-500"><strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilprising, spesifikasjonsendringer og at varer kan være utsolgt ved mellomdagssalg i butikk.</p>
+            <p className="border-t border-neutral-800 pt-2 text-[11px] italic leading-relaxed text-gray-500"><strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilpricing, spesifikasjonsendringer og at varer kan være utsolgt ved mellomdagssalg i butikk.</p>
           </div>
         </div>
       </footer>
