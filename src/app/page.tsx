@@ -285,7 +285,7 @@ export default function HomePage() {
             <h5 className="mb-3 text-base font-bold text-white">Betaling & Forbehold</h5>
             <p className="mb-2 text-xs leading-relaxed">Vi tilbyr enkel betaling med Vipps. Alle varer registrert solgt blir klargjort for enten henting i butikk i Verkstedveien 2 eller sending per post.</p>
             <p className="mb-2 text-[11px] font-medium leading-relaxed text-gray-500">Alle priser på Tilbudsboden.no er oppgitt inkl. mva.</p>
-            <p className="border-t border-neutral-800 pt-2 text-[11px] italic leading-relaxed text-gray-500"><strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilpricing, spesifikasjonsendringer og at varer kan være utsolgt ved mellomdagssalg i butikk.</p>
+            <p className="border-t border-neutral-800 pt-2 text-[11px] italic leading-relaxed text-gray-500"><strong>Forbehold:</strong> Vi tar forbehold om skrivefeil, feilprising, spesifikasjonsendringer og at varer kan være utsolgt ved mellomdagssalg i butikk.</p>
           </div>
         </div>
       </footer>
