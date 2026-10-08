@@ -163,7 +163,7 @@ export default function HomePage() {
       <header className="z-50 bg-neutral-900 px-4 py-2 text-sm text-white"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row"><div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"><span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-red-600" />Verkstedveien 2, 8402 Sortland</span><span className="flex items-center gap-1"><Phone className="h-4 w-4 text-red-600" />76 12 13 60</span><span className="flex items-center gap-1"><Mail className="h-4 w-4 text-red-600" />sortland@eiksenteret.no</span></div><div className="text-xs text-gray-400">Org.nr: 936 858 031 | Eiksenteret Sortland</div></div></header>
       <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-[0_3px_12px_rgba(0,0,0,0.06)]"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
       
-      {/* Hero-seksjon med spisset og konverterende overskrift */}
+      {/* Hero-seksjon med oppdatert CTA-knapp */}
       <section className="mx-auto w-full max-w-7xl px-4 pb-2 pt-4">
         <div className="relative h-[300px] overflow-hidden rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.08)] sm:h-[340px]">
           <img
@@ -186,10 +186,10 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={scrollToProducts}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-6 py-3 text-sm font-extrabold text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-8 py-3.5 text-base font-black text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] hover:shadow-2xl hover:shadow-orange-500/25 active:translate-y-0 sm:text-lg"
                 >
-                  <span>🟧 Se alle tilbud</span>
-                  <ChevronDown className="h-4 w-4" />
+                  <span>Vis tilbudene</span>
+                  <ChevronDown className="h-5 w-5" />
                 </button>
               </div>
             </div>
