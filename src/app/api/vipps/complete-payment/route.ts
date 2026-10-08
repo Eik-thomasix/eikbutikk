@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVippsPaymentStatus } from '@/lib/vipps';
 
-// Riktige Gruppe-ID-er i Monday-boardet
+// Riktige Gruppe-ID-er i Monday-boardet for ordrer
 const ORDER_GROUPS = {
-  paid: 'topics', // Gruppe-ID for 'Betalt'
+  paid: 'group_mm73t3k9', // Gruppe-ID for 'Betalt'
+  processing: 'group_mm73ae8b', // Gruppe-ID for 'Behandles'
+  pending: 'group_mm738d0y', // Gruppe-ID for 'Venter på betaling'
+  completed: 'group_mm73mky8', // Gruppe-ID for 'Sendt / Hentet'
   cancelled: 'group_mm7317nf', // Gruppe-ID for 'Avbrutt'
 } as const;
 
