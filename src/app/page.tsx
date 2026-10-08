@@ -46,55 +46,53 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
   const isOutOfStock = stock <= 0;
 
   return (
-    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-lg border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 sm:rounded-xl ${isOutOfStock ? 'border-gray-300 opacity-80' : 'border-gray-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.10)]'}`}>
+    <article ref={cardRef} data-product-id={product.id} className={`relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 sm:rounded-xl ${isOutOfStock ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:-translate-y-1 hover:shadow-md'}`}>
       {/* Badges i toppen */}
       <div className="absolute left-2 top-2 z-10 flex flex-col gap-1 sm:left-3 sm:top-3 sm:gap-1.5">
         {discount > 0 && (
-          <span className="-rotate-2 rounded-md border border-white/40 bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2 py-1 text-[9px] font-black text-white shadow-[0_4px_10px_rgba(220,38,38,0.45)] ring-1 ring-red-800/20 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs">
+          <span className="inline-flex items-center rounded-md bg-gradient-to-r from-red-700 via-red-600 to-orange-500 px-2 py-0.5 text-[9px] font-black uppercase text-white shadow-sm sm:px-2.5 sm:py-1 sm:text-xs">
             🔥 SPAR {savings.toLocaleString('no-NO')} KR
           </span>
         )}
         {isNewItem(product.createdAt) && (
-          <span className="flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[9px] font-bold text-white shadow-sm sm:px-2.5 sm:text-xs"><Clock className="h-3 w-3" />NY</span>
+          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm sm:px-2.5 sm:text-xs"><Clock className="h-3 w-3" />NY</span>
         )}
       </div>
 
       {/* Produktbilde */}
-      <div onClick={() => onOpenProduct(product.id)} className="group relative flex h-36 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50 p-2 sm:h-56 sm:p-4">
+      <div onClick={() => onOpenProduct(product.id)} className="group relative flex h-36 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50/50 p-2 sm:h-52 sm:p-4">
         <img src={product.images?.[0] || '/tilbudsbodenlogo.svg'} alt={product.name} className={`max-h-full max-w-full object-contain transition-transform duration-300 ${isOutOfStock ? 'grayscale' : 'group-hover:scale-105'}`} onError={(event) => { event.currentTarget.src = '/tilbudsbodenlogo.svg'; }} />
       </div>
 
       {/* Produktinnhold */}
-      <div className="flex flex-grow flex-col justify-between p-3 sm:p-4">
+      <div className="flex flex-grow flex-col justify-between p-2.5 sm:p-4">
         <div>
-          <div className="mb-1 line-clamp-1 text-[10px] font-medium text-gray-400 sm:text-xs">Varenr: {product.itemNumber} | {product.category}</div>
-          <h4 onClick={() => onOpenProduct(product.id)} className="mb-2 line-clamp-2 min-h-[2.25rem] cursor-pointer text-sm font-bold leading-snug text-gray-900 transition-colors hover:text-red-600 sm:min-h-[2.75rem] sm:text-base">{product.name}</h4>
+          <div className="mb-0.5 truncate text-[10px] font-medium text-gray-400 sm:text-xs">Varenr: {product.itemNumber}</div>
+          <h4 onClick={() => onOpenProduct(product.id)} className="mb-2 line-clamp-2 min-h-[2.2rem] cursor-pointer text-xs font-bold leading-tight text-gray-900 hover:text-red-600 sm:min-h-[2.6rem] sm:text-base">{product.name}</h4>
           <p className="mb-3 hidden line-clamp-2 text-xs text-gray-600 sm:block">{product.shortInfo}</p>
         </div>
 
         <div>
-          {/* Leverings-/Hentestatus & Lagerstatus */}
-          <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs">
-            {product.pickupOnly ? (
-              <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-800"><MapPin className="h-3 w-3" />Må hentes</span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2 py-0.5 font-medium text-blue-800"><Award className="h-3 w-3" />Post / Henting</span>
-            )}
-            <span className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 font-bold ${stockInfo.wrapperClass}`}>
-              {stockInfo.icon}<span>{stockInfo.text}</span>
+          {/* Kompakt og ryddig statuslinje på én enkelt linje for mobil */}
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] text-gray-600 sm:text-xs">
+            <span className="font-medium text-gray-500">
+              {product.pickupOnly ? 'Må hentes' : 'Post/Henting'}
+            </span>
+            <span className="text-gray-300">•</span>
+            <span className={`inline-flex items-center font-bold ${stock <= 5 ? 'text-orange-600' : 'text-green-700'}`}>
+              {stockInfo.text}
             </span>
           </div>
 
-          {/* Seksjon for Pris og Vipps-knapp i 2 kolonner */}
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/80 p-2 sm:p-3">
+          {/* Seksjon for Pris og Vipps-knapp */}
+          <div className="flex items-center justify-between gap-1.5 rounded-lg border border-gray-100 bg-gray-50/80 p-2 sm:p-3">
             {/* Pris og veil. pris til venstre */}
-            <div className="flex flex-col justify-center">
-              <span className="text-lg font-black leading-none text-red-600 sm:text-2xl">
-                {product.salePrice.toLocaleString('no-NO')} kr
+            <div className="flex min-w-0 flex-col justify-center">
+              <span className="text-sm font-black leading-none text-red-600 sm:text-2xl">
+                {product.salePrice.toLocaleString('no-NO')}&nbsp;kr
               </span>
               {product.listPrice > product.salePrice && (
-                <div className="mt-1 flex items-center gap-1 text-[10px] text-gray-400 sm:text-xs">
-                  <span>Veil:</span>
+                <div className="mt-0.5 flex items-center gap-1 text-[9px] text-gray-400 sm:text-xs">
                   <span className="line-through">{product.listPrice.toLocaleString('no-NO')} kr</span>
                 </div>
               )}
@@ -105,9 +103,9 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
               type="button"
               onClick={() => onBuyWithVipps(product)}
               disabled={isOutOfStock}
-              className="group flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-3 py-2 text-xs font-extrabold text-white shadow-sm ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
+              className="group flex shrink-0 items-center justify-center gap-1 rounded-md bg-gradient-to-b from-[#ff7040] to-[#ff5b24] px-2.5 py-1.5 text-[11px] font-extrabold text-white shadow-sm ring-1 ring-black/5 transition-all duration-200 hover:from-[#ff8458] hover:to-[#e54812] active:translate-y-0 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
             >
-              <ShoppingBag className="h-3.5 w-3.5 transition-transform duration-200 group-hover:scale-110 sm:h-4 sm:w-4" />
+              <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>{isOutOfStock ? 'Utsolgt' : 'Vipps'}</span>
             </button>
           </div>
@@ -237,7 +235,7 @@ export default function HomePage() {
             <p className="text-sm text-gray-500">Når en vare blir utsolgt eller en ny vare lagres i Monday, oppdateres listen automatisk.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
