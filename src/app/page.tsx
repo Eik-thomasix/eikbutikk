@@ -158,9 +158,37 @@ export default function HomePage() {
     }
   };
 
+  const openEmail = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const user = 'sortland';
+    const domain = 'eiksenteret.no';
+    window.location.href = `mailto:${user}@${domain}`;
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="z-50 bg-neutral-900 px-4 py-2 text-sm text-white"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row"><div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"><span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-red-600" />Verkstedveien 2, 8402 Sortland</span><span className="flex items-center gap-1"><Phone className="h-4 w-4 text-red-600" />76 12 13 60</span><span className="flex items-center gap-1"><Mail className="h-4 w-4 text-red-600" />sortland@eiksenteret.no</span></div><div className="text-xs text-gray-400">Org.nr: 936 858 031 | Eiksenteret Sortland</div></div></header>
+      <header className="z-50 bg-neutral-900 px-4 py-2 text-sm text-white">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <span className="flex items-center gap-1">
+              <MapPin className="h-4 w-4 text-red-600" />Verkstedveien 2, 8402 Sortland
+            </span>
+            <span className="flex items-center gap-1">
+              <Phone className="h-4 w-4 text-red-600" />76 12 13 60
+            </span>
+            <a
+              href="#epost"
+              onClick={openEmail}
+              className="flex items-center gap-1 hover:text-gray-200"
+            >
+              <Mail className="h-4 w-4 text-red-600" />
+              <span>sortland@eiksenteret.no</span>
+            </a>
+          </div>
+          <div className="text-xs text-gray-400">Org.nr: 936 858 031 | Eiksenteret Sortland</div>
+        </div>
+      </header>
+
       <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-[0_3px_12px_rgba(0,0,0,0.06)]"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3"><div className="flex cursor-pointer items-center gap-4" onClick={() => router.push('/')}><img src="/tilbudsbodenlogo.svg" alt="Tilbudsboden.no - fra Eiksenteret Sortland" className="h-10 object-contain md:h-12" /><div className="border-l border-gray-300 pl-4"><h1 className="text-lg font-bold leading-none tracking-tight text-gray-900 md:text-xl">Tilbudsboden.no</h1><p className="mt-1 text-xs text-gray-500">Restpartier, kampanjevarer og gode kjøp fra Eiksenteret Sortland</p></div></div><div className="hidden items-center gap-4 sm:flex"><span className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><Tag className="h-3.5 w-3.5" />Direkte fra lageret på Sortland</span></div></div></nav>
       
       {/* Hero-seksjon med oppdatert CTA-knapp */}
@@ -202,7 +230,7 @@ export default function HomePage() {
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:justify-center">
           {[
             'Direkte fra lageret på Sortland',
-            'Restpartier og demovarer',
+            'Full garanti og reklamasjonsrett',
             'Hent i butikk eller få levert',
           ].map((item, index) => (
             <div
@@ -272,7 +300,16 @@ export default function HomePage() {
             <p className="mb-1 font-semibold text-white">Eiksenteret Sortland</p>
             <p className="mb-1">Verkstedveien 2, 8402 Sortland</p>
             <p className="mb-1">Telefon: 76 12 13 60</p>
-            <p>E-post: sortland@eiksenteret.no</p>
+            <p className="flex items-center gap-1">
+              <span>E-post:</span>
+              <a
+                href="#epost"
+                onClick={openEmail}
+                className="hover:text-white underline"
+              >
+                sortland@eiksenteret.no
+              </a>
+            </p>
           </div>
           <div>
             <h5 className="mb-3 text-base font-bold text-white">Om Tilbudsboden.no</h5>
