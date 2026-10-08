@@ -197,12 +197,13 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Oppdatert Trust-seksjon */}
       <section className="mx-auto w-full max-w-7xl px-4 pt-4">
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:justify-center">
           {[
-            'Alt inkludert – ingen overraskelser',
-            'Rask levering eller hent i butikk',
-            'Lokal faghandel – Eiksenteret Sortland',
+            'Direkte fra lageret på Sortland',
+            'Full garanti og reklamasjonsrett',
+            'Hent i butikk eller få levert',
           ].map((item, index) => (
             <div
               key={item}
@@ -212,7 +213,7 @@ export default function HomePage() {
                   : ''
               }`}
             >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-700">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
                 ✓
               </span>
               <span>{item}</span>
