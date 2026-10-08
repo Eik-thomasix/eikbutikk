@@ -202,7 +202,7 @@ export default function HomePage() {
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:justify-center">
           {[
             'Direkte fra lageret på Sortland',
-            'Full garanti og reklamasjonsrett',
+            'Restpartier og demovarer',
             'Hent i butikk eller få levert',
           ].map((item, index) => (
             <div
