@@ -8,6 +8,7 @@ export interface Product {
   salePrice: number;
   stock: number;
   weight: number;
+  productionYear: string;
   shortInfo: string;
   descriptionHtml: string;
   createdAt: string;
@@ -284,6 +285,7 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
         }
 
         imageList = Array.from(new Set(imageList));
+
         if (imageList.length === 0) imageList = ['/EIKLOGO.png'];
 
         const listPrice =
@@ -307,6 +309,9 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           weightColumn?.text || getColumnValue('Vekt (kg)')
         );
 
+        const productionYear =
+          getColumnById('text_mm7zvb7d')?.text?.trim() || '';
+
         return {
           id: item.id,
           name: item.name,
@@ -321,6 +326,7 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           salePrice,
           stock,
           weight,
+          productionYear,
           shortInfo:
             getColumnValue('Kort Info') ||
             getColumnValue('Info') ||
