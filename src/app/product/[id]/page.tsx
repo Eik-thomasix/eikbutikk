@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Truck,
   CheckCircle2,
+  Calendar,
 } from 'lucide-react';
 import { Product } from '@/lib/monday';
 import CheckoutModal from '@/components/CheckoutModal';
@@ -500,6 +501,15 @@ export default function ProductDetailPage() {
               __html: product.descriptionHtml,
             }}
           />
+
+          {/* Diskret visning av produksjonsår om det er registrert i Monday */}
+          {product.productionYear && (
+            <div className="mt-6 border-t border-gray-100 pt-4 flex items-center gap-2 text-xs text-gray-500">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <span className="font-semibold text-gray-700">Produksjonsår:</span>
+              <span>{product.productionYear}</span>
+            </div>
+          )}
         </div>
       </main>
 
