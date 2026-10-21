@@ -28,36 +28,45 @@ interface MondayColumnValue {
   id: string;
   text?: string | null;
   value?: string | null;
-  column?: {
-    title?: string | null;
-  } | null;
+  column?: { title?: string | null } | null;
 }
 
 interface MondayItem {
   id: string;
   name: string;
   created_at?: string | null;
-  group?: {
-    id?: string | null;
-    title?: string | null;
-  } | null;
-  updates?: Array<{
-    body?: string | null;
-  }>;
+  group?: { id?: string | null; title?: string | null } | null;
+  updates?: Array<{ body?: string | null }>;
   assets?: MondayAsset[];
   column_values?: MondayColumnValue[];
 }
 
 function parseNorwegianNumber(value: string): number {
   if (!value) return 0;
-
-  const normalized = value
-    .replace(/\s/g, '')
-    .replace(',', '.')
-    .replace(/[^0-9.-]/g, '');
-
+  const normalized = value.replace(/\s/g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isInternalUpdate(body: string): boolean {
+  const normalized = body
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  if (!normalized) return true;
+
+  const internalMessagePatterns = [
+    'kan ikke sette aktiv',
+    'bilder er ikke bekreftet',
+    'last opp bilder',
+    'kryss av «bilder bekreftet»',
+    'kryss av "bilder bekreftet"',
+  ];
+
+  return internalMessagePatterns.some((pattern) => normalized.includes(pattern));
 }
 
 export async function fetchProductsFromMonday(): Promise<Product[]> {
@@ -83,27 +92,14 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
             id
             name
             created_at
-            group {
-              id
-              title
-            }
-            updates(limit: 1) {
-              body
-            }
-            assets {
-              id
-              name
-              public_url
-              url
-              file_extension
-            }
+            group { id title }
+            updates(limit: 20) { body }
+            assets { id name public_url url file_extension }
             column_values {
               id
               text
               value
-              column {
-                title
-              }
+              column { title }
             }
           }
         }
@@ -126,166 +122,97 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error(
-        'Monday svarte med HTTP-feil:',
-        response.status,
-        response.statusText,
-        JSON.stringify(data, null, 2)
-      );
+      console.error('Monday svarte med HTTP-feil:', response.status, response.statusText, JSON.stringify(data, null, 2));
       return [];
     }
 
     if (data.errors) {
-      console.error(
-        'Monday GraphQL-feil:',
-        JSON.stringify(data.errors, null, 2)
-      );
+      console.error('Monday GraphQL-feil:', JSON.stringify(data.errors, null, 2));
       return [];
     }
 
     const boards = data?.data?.boards || [];
-
     if (boards.length === 0) {
-      console.error(
-        `Monday returnerte ikke board ${boardId}. Kontroller tilgangen.`
-      );
+      console.error(`Monday returnerte ikke board ${boardId}. Kontroller tilgangen.`);
       return [];
     }
 
     const board = boards[0];
     const items: MondayItem[] = board?.items_page?.items || [];
-
     console.log('Board funnet:', { id: board.id, name: board.name });
     console.log('Antall items returnert fra Monday:', items.length);
 
-    if (items.length === 0) {
-      return [];
-    }
+    if (items.length === 0) return [];
 
     const parsedProducts = items
       .map((item): Product | null => {
-        const getColumnObject = (
-          title: string
-        ): MondayColumnValue | undefined => {
+        const getColumnObject = (title: string): MondayColumnValue | undefined => {
           const targetTitle = title.trim().toLowerCase();
-
           return item.column_values?.find((columnValue) => {
-            const columnTitle = columnValue.column?.title
-              ?.trim()
-              .toLowerCase();
-
+            const columnTitle = columnValue.column?.title?.trim().toLowerCase();
             if (!columnTitle) return false;
-
-            return (
-              columnTitle === targetTitle ||
-              columnTitle.includes(targetTitle)
-            );
+            return columnTitle === targetTitle || columnTitle.includes(targetTitle);
           });
         };
 
-        const getColumnById = (
-          columnId: string
-        ): MondayColumnValue | undefined => {
-          return item.column_values?.find(
-            (columnValue) => columnValue.id === columnId
-          );
-        };
+        const getColumnById = (columnId: string): MondayColumnValue | undefined =>
+          item.column_values?.find((columnValue) => columnValue.id === columnId);
 
         const getColumnValue = (title: string): string => {
           const column = getColumnObject(title);
-          return typeof column?.text === 'string'
-            ? column.text.trim()
-            : '';
+          return typeof column?.text === 'string' ? column.text.trim() : '';
         };
 
-        // 1. Sjekk at varen ligger i gruppen "Aktive produkter"
         const groupTitle = item.group?.title?.trim().toLowerCase() || '';
         const isInActiveGroup = groupTitle === 'aktive produkter';
-
-        // 2. Sjekk at Status-kolonnen står til "Aktiv"
         const status = getColumnValue('Status');
         const isStatusActive = status.toLowerCase() === 'aktiv';
-
-        // Kun varer i gruppen "Aktive produkter" MED status "Aktiv" tillates i nettbutikken
         if (!isInActiveGroup || !isStatusActive) return null;
 
         const stock = parseNorwegianNumber(getColumnValue('Lager'));
 
+        const latestPublishedUpdateHtml = (item.updates || [])
+          .map((update) => update.body?.trim() || '')
+          .find((body) => body !== '' && !isInternalUpdate(body));
+
         const latestUpdateHtml =
-          item.updates?.[0]?.body ||
+          latestPublishedUpdateHtml ||
           getColumnValue('Beskrivelse') ||
           '<p>Ingen detaljert beskrivelse tilgjengelig.</p>';
 
-        const imageExtensions = new Set([
-          'jpg',
-          'jpeg',
-          'png',
-          'webp',
-          'gif',
-          'avif',
-          'svg',
-        ]);
-
+        const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'svg']);
         let imageList = (item.assets || [])
           .filter((asset) => {
-            const extension = asset.file_extension
-              ?.toLowerCase()
-              .replace('.', '');
-
+            const extension = asset.file_extension?.toLowerCase().replace('.', '');
             if (extension) return imageExtensions.has(extension);
-
             const fileName = asset.name?.toLowerCase() || '';
-            return Array.from(imageExtensions).some((allowed) =>
-              fileName.endsWith(`.${allowed}`)
-            );
+            return Array.from(imageExtensions).some((allowed) => fileName.endsWith(`.${allowed}`));
           })
           .map((asset) => asset.public_url || asset.url || '')
-          .filter(
-            (url): url is string =>
-              typeof url === 'string' && url.startsWith('http')
-          );
+          .filter((url): url is string => typeof url === 'string' && url.startsWith('http'));
 
         imageList = Array.from(new Set(imageList));
-
-        const imageColumn =
-          getColumnObject('Bilder') || getColumnObject('Bilde');
+        const imageColumn = getColumnObject('Bilder') || getColumnObject('Bilde');
 
         if (imageList.length === 0 && imageColumn?.text) {
-          imageList.push(
-            ...imageColumn.text
-              .split(',')
-              .map((url) => url.trim())
-              .filter((url) => url.startsWith('http'))
-          );
+          imageList.push(...imageColumn.text.split(',').map((url) => url.trim()).filter((url) => url.startsWith('http')));
         }
 
         if (imageList.length === 0 && imageColumn?.value) {
           try {
             const parsedValue = JSON.parse(imageColumn.value);
-            const files = Array.isArray(parsedValue?.files)
-              ? parsedValue.files
-              : [];
-
+            const files = Array.isArray(parsedValue?.files) ? parsedValue.files : [];
             imageList.push(
               ...files
-                .map(
-                  (file: { url?: string; public_url?: string }) =>
-                    file.public_url || file.url || ''
-                )
-                .filter(
-                  (url: string) =>
-                    typeof url === 'string' && url.startsWith('http')
-                )
+                .map((file: { url?: string; public_url?: string }) => file.public_url || file.url || '')
+                .filter((url: string) => typeof url === 'string' && url.startsWith('http'))
             );
           } catch {
-            console.warn(
-              `Kunne ikke tolke bildefeltet for "${item.name}".`
-            );
+            console.warn(`Kunne ikke tolke bildefeltet for "${item.name}".`);
           }
         }
 
         imageList = Array.from(new Set(imageList));
-
         if (imageList.length === 0) imageList = ['/EIKLOGO.png'];
 
         const listPrice =
@@ -293,34 +220,22 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           parseNorwegianNumber(getColumnValue('Veil')) ||
           parseNorwegianNumber(getColumnValue('Pris'));
 
-        const salePrice =
-          parseNorwegianNumber(getColumnValue('Nettpris')) || listPrice;
-
-        const shippingMethod =
-          getColumnValue('Fraktmetode') || getColumnValue('Frakt');
-
+        const salePrice = parseNorwegianNumber(getColumnValue('Nettpris')) || listPrice;
+        const shippingMethod = getColumnValue('Fraktmetode') || getColumnValue('Frakt');
         const pickupOnly =
           shippingMethod === '' ||
           shippingMethod.toLowerCase().includes('henting') ||
           shippingMethod.toLowerCase().includes('butikk');
 
         const weightColumn = getColumnById('numeric_mm75drw8');
-        const weight = parseNorwegianNumber(
-          weightColumn?.text || getColumnValue('Vekt (kg)')
-        );
-
-        const productionYear =
-          getColumnById('text_mm7zvb7d')?.text?.trim() || '';
+        const weight = parseNorwegianNumber(weightColumn?.text || getColumnValue('Vekt (kg)'));
+        const productionYear = getColumnById('text_mm7zvb7d')?.text?.trim() || '';
 
         return {
           id: item.id,
           name: item.name,
-          itemNumber:
-            getColumnValue('Varenummer') ||
-            getColumnValue('Varenr') ||
-            'Uten varenr',
-          category:
-            getColumnValue('Kategori') || 'Utstyr & Maskiner',
+          itemNumber: getColumnValue('Varenummer') || getColumnValue('Varenr') || 'Uten varenr',
+          category: getColumnValue('Kategori') || 'Utstyr & Maskiner',
           images: imageList,
           listPrice,
           salePrice,
@@ -334,17 +249,12 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           descriptionHtml: latestUpdateHtml,
           createdAt: item.created_at || new Date().toISOString(),
           pickupOnly,
-          views:
-            Number.parseInt(getColumnValue('Visninger'), 10) || 0,
+          views: Number.parseInt(getColumnValue('Visninger'), 10) || 0,
         };
       })
       .filter((product): product is Product => product !== null);
 
-    console.log(
-      'Antall aktive produkter etter filtrering:',
-      parsedProducts.length
-    );
-
+    console.log('Antall aktive produkter etter filtrering:', parsedProducts.length);
     return parsedProducts;
   } catch (error) {
     console.error('Kritisk feil ved henting fra Monday:', error);
