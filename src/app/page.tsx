@@ -89,7 +89,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
               {product.pickupOnly ? 'Må hentes' : 'Post/Henting'}
             </span>
             <span className="text-gray-300">•</span>
-            <span className={`shrink-0 font-bold ${stock > 0 && stock <= 3 ? 'text-orange-600' : stock <= 0 ? 'text-red-700' : 'text-green-700'}`}>
+            <span className={`shrink-0 font-bold ${stock <= 0 ? 'text-red-700' : stock <= 3 ? 'text-orange-600' : 'text-green-700'}`}>
               {stockInfo.text}
             </span>
           </div>
@@ -147,8 +147,9 @@ export default function HomePage() {
   const calculateDiscount = (listPrice: number, salePrice: number) => !listPrice || listPrice <= salePrice ? 0 : Math.round(((listPrice - salePrice) / listPrice) * 100);
   const getStockInfo = (stock: number): StockInfo => {
     if (stock <= 0) return { text: 'UTSOLGT', wrapperClass: 'bg-red-50 text-red-700 border-red-200', icon: <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> };
-    if (stock <= 5) return { text: `🔥 ${stock} igjen`, wrapperClass: 'bg-orange-50 text-orange-800 border-orange-300 shadow-sm', icon: <AlertTriangle className="h-3.5 w-3.5 text-red-600" aria-hidden="true" /> };
-    return { text: `${stock} på lager`, wrapperClass: 'bg-green-50 text-green-700 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> };
+    if (stock <= 3) return { text: `🔥 ${stock} på lager`, wrapperClass: 'bg-orange-50 text-orange-800 border-orange-300 shadow-sm', icon: <AlertTriangle className="h-3.5 w-3.5 text-red-600" aria-hidden="true" /> };
+    if (stock <= 5) return { text: `${stock} på lager`, wrapperClass: 'bg-green-50 text-green-700 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> };
+    return { text: 'Flere enn 5 på lager', wrapperClass: 'bg-green-50 text-green-700 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> };
   };
 
   const scrollToProducts = () => {
