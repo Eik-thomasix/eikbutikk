@@ -89,7 +89,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
               {product.pickupOnly ? 'Må hentes' : 'Post/Henting'}
             </span>
             <span className="text-gray-300">•</span>
-            <span className={`shrink-0 font-bold ${stock <= 5 ? 'text-orange-600' : 'text-green-700'}`}>
+            <span className={`shrink-0 font-bold ${stock > 0 && stock <= 3 ? 'text-orange-600' : stock <= 0 ? 'text-red-700' : 'text-green-700'}`}>
               {stockInfo.text}
             </span>
           </div>
