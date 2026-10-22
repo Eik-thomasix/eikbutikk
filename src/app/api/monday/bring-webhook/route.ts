@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { captureVippsPayment } from '@/lib/vipps';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
 
@@ -7,8 +8,15 @@ const ORDER_BOARD_ID = '18430730386';
 const SHIPPING_STATUS_COLUMN_ID = 'color_mm75212c';
 const ORDER_NUMBER_COLUMN_ID = 'text_mm73e37c';
 const PRODUCT_JSON_COLUMN_ID = 'long_text_mm73r6vx';
+const ORDER_STATUS_COLUMN_ID = 'color_mm73zcsm';
+const PAYMENT_STATUS_COLUMN_ID = 'color_mm73ta14';
+const VIPPS_STATUS_COLUMN_ID = 'color_mm73pqa6';
+const PROCESSING_GROUP_ID = 'group_mm73ae8b';
+const COMPLETED_GROUP_ID = 'group_mm73mky8';
 
 const STATUS_READY = 'Klar for sending';
+const STATUS_READY_PICKUP = 'Klar for henting';
+const STATUS_PICKED_UP = 'Hentet';
 const STATUS_SENT = 'Sendt';
 const STATUS_FAILED = 'Feilet';
 
@@ -100,6 +108,17 @@ function parseLongText(column?: MondayColumnValue): string {
   }
 
   return '';
+}
+
+function getOrderTotal(order: StoredOrder): number {
+  const salePrice = Number(order.product.salePrice || 0);
+  const shippingPrice = Number(order.product.shippingPrice || order.shipping?.price || 0);
+  const storedTotal = Number(order.product.totalPrice || 0);
+  const total = storedTotal > 0 ? storedTotal : salePrice + shippingPrice;
+  if (!Number.isFinite(total) || total <= 0) {
+    throw new Error('Ordren mangler gyldig totalbeløp for Vipps capture.');
+  }
+  return total;
 }
 
 async function mondayRequest(
@@ -198,6 +217,38 @@ async function setShippingStatus(itemId: string, label: string) {
   });
 }
 
+async function updatePickupOrder(params: {
+  itemId: string;
+  orderStatus: string;
+  moveToGroupId?: string;
+}) {
+  const mutation = `
+    mutation UpdatePickupOrder(
+      $boardId: ID!
+      $itemId: ID!
+      $values: JSON!
+      $groupId: String
+    ) {
+      change_multiple_column_values(
+        board_id: $boardId
+        item_id: $itemId
+        column_values: $values
+      ) { id }
+      ${params.moveToGroupId ? 'move_item_to_group(item_id: $itemId, group_id: $groupId) { id }' : ''}
+    }
+  `;
+  await mondayRequest(mutation, {
+    boardId: ORDER_BOARD_ID,
+    itemId: params.itemId,
+    values: JSON.stringify({
+      [ORDER_STATUS_COLUMN_ID]: { label: params.orderStatus },
+      [PAYMENT_STATUS_COLUMN_ID]: { label: 'Betalt' },
+      [VIPPS_STATUS_COLUMN_ID]: { label: 'Captured' },
+    }),
+    ...(params.moveToGroupId ? { groupId: params.moveToGroupId } : {}),
+  });
+}
+
 function getBaseUrl(request: NextRequest): string {
   const configured = process.env.NEXT_PUBLIC_BASE_URL?.trim();
   if (!configured) return request.nextUrl.origin.replace(/\/+$/, '');
@@ -272,7 +323,7 @@ async function sendShipmentEmail(params: {
           </div>
 
           <div style="background:#f3f4f6;border-radius:8px;padding:15px;font-size:13px;line-height:1.55;color:#374151;">
-            Sporingen kan bruke litt tid på å bli synlig etter at sendingen er registrert hos Bring.
+            Sporingen kan bruke litt tid på Ã¥ bli synlig etter at sendingen er registrert hos Bring.
           </div>
 
           <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:#4b5563;">
@@ -300,6 +351,48 @@ async function sendShipmentEmail(params: {
   return recipient;
 }
 
+async function sendPickupReadyEmail(params: {
+  order: StoredOrder;
+  orderId: string;
+}) {
+  if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY mangler.');
+  const safe = {
+    customerName: escapeHtml(params.order.customer.name),
+    productName: escapeHtml(params.order.product.name),
+    itemNumber: escapeHtml(params.order.product.itemNumber || 'Ikke oppgitt'),
+    orderId: escapeHtml(params.orderId),
+  };
+  const result = await resend.emails.send({
+    from: 'Eiksenteret Sortland | Tilbudsboden <ordre@tilbudsboden.no>',
+    replyTo: 'sortland@eiksenteret.no',
+    to: [params.order.customer.email],
+    subject: `Bestillingen er klar for henting | Ordre ${params.orderId}`,
+    html: `
+      <div style="margin:0;background:#f3f4f6;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+        <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <div style="background:#d71920;color:#ffffff;padding:24px;text-align:center;">
+            <h1 style="margin:0;font-size:24px;">Tilbudsboden.no</h1>
+            <p style="margin:6px 0 0;font-size:14px;">Fra Eiksenteret Sortland</p>
+          </div>
+          <div style="padding:28px;">
+            <p style="margin:0 0 8px;color:#6b7280;font-size:13px;">Ordre ${safe.orderId}</p>
+            <h2 style="margin:0 0 16px;font-size:22px;">Bestillingen er klar for henting</h2>
+            <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.65;">Hei ${safe.customerName}. Varen din er nå kontrollert og klar for henting hos Eiksenteret Sortland.</p>
+            <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:0 0 20px;background:#f9fafb;font-size:14px;line-height:1.6;">
+              <strong>Produkt:</strong> ${safe.productName}<br>
+              <strong>Varenummer:</strong> ${safe.itemNumber}<br>
+              <strong>Hentested:</strong> Verkstedveien 2, 8402 Sortland<br>
+              <strong>Ordrenummer:</strong> ${safe.orderId}
+            </div>
+            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.55;">Oppgi gjerne ordrenummeret ved henting. Spørsmål? Ring 76 12 13 60 eller svar på denne e-posten.</p>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+  if (result.error) throw new Error(result.error.message || 'Resend avviste hentemailen.');
+}
+
 export async function POST(request: NextRequest) {
   let itemId = '';
 
@@ -319,33 +412,90 @@ export async function POST(request: NextRequest) {
 
     if (!itemId) return jsonError('Webhooken mangler item-ID.', 400);
 
+    const supportedStatus = [STATUS_READY, STATUS_READY_PICKUP, STATUS_PICKED_UP].includes(newStatus);
     if (
       boardId !== ORDER_BOARD_ID ||
       event.columnId !== SHIPPING_STATUS_COLUMN_ID ||
-      newStatus !== STATUS_READY
+      !supportedStatus
     ) {
       return NextResponse.json({
         success: true,
         ignored: true,
-        message: 'Webhook-hendelsen skal ikke starte Bring-booking.',
+        message: 'Webhook-hendelsen skal ikke starte ordrebehandling.',
       });
     }
-
     const order = await getOrder(itemId);
     if (!order.orderId || !order.storedOrder) {
       await setShippingStatus(itemId, STATUS_FAILED);
       return jsonError('Ordren mangler ordrenummer eller Produkt JSON.', 422);
     }
 
-    if (order.shippingStatus !== STATUS_READY) {
+    if (order.shippingStatus !== newStatus) {
       return NextResponse.json({
         success: true,
         ignored: true,
-        message: 'Fraktstatus er ikke lenger Klar for sending.',
+        message: 'Fraktstatus er endret siden webhook-hendelsen ble mottatt.',
       });
     }
 
+    const deliveryMethod = order.storedOrder.customer.deliveryMethod || order.storedOrder.shipping?.deliveryMethod;
+
+    if (newStatus === STATUS_READY_PICKUP) {
+      if (deliveryMethod !== 'Henting i butikk') {
+        await setShippingStatus(itemId, STATUS_FAILED);
+        return jsonError('Klar for henting kan bare brukes på henteordrer.', 409);
+      }
+      if (process.env.VIPPS_CAPTURE_ENABLED !== 'true') {
+        await setShippingStatus(itemId, STATUS_FAILED);
+        return jsonError('Vipps capture er ikke aktivert.', 503);
+      }
+      const captureResult = await captureVippsPayment({
+        reference: order.orderId,
+        amountInNok: getOrderTotal(order.storedOrder),
+      });
+      await updatePickupOrder({
+        itemId,
+        orderStatus: STATUS_READY_PICKUP,
+        moveToGroupId: PROCESSING_GROUP_ID,
+      });
+      await sendPickupReadyEmail({ order: order.storedOrder, orderId: order.orderId });
+      return NextResponse.json({
+        success: true,
+        itemId,
+        orderId: order.orderId,
+        vippsCaptured: true,
+        vippsAlreadyCaptured: captureResult.alreadyCaptured,
+        capturedAmountInEre: captureResult.capturedAmountInEre,
+        emailSent: true,
+        message: 'Henteordren er captured og kunden er varslet.',
+      });
+    }
+
+    if (newStatus === STATUS_PICKED_UP) {
+      if (deliveryMethod !== 'Henting i butikk') {
+        await setShippingStatus(itemId, STATUS_FAILED);
+        return jsonError('Hentet kan bare brukes på henteordrer.', 409);
+      }
+      await updatePickupOrder({
+        itemId,
+        orderStatus: STATUS_PICKED_UP,
+        moveToGroupId: COMPLETED_GROUP_ID,
+      });
+      return NextResponse.json({
+        success: true,
+        itemId,
+        orderId: order.orderId,
+        message: 'Henteordren er markert som hentet og fullført.',
+      });
+    }
+
+    if (deliveryMethod !== 'Postsending') {
+      await setShippingStatus(itemId, STATUS_FAILED);
+      return jsonError('Klar for sending kan bare brukes på postordrer.', 409);
+    }
+
     const adminSecret = process.env.BRING_ADMIN_SECRET?.trim();
+
     if (!adminSecret) {
       await setShippingStatus(itemId, STATUS_FAILED);
       return jsonError('BRING_ADMIN_SECRET mangler.', 503);
