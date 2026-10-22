@@ -272,7 +272,7 @@ async function sendShipmentEmail(params: {
           </div>
 
           <div style="background:#f3f4f6;border-radius:8px;padding:15px;font-size:13px;line-height:1.55;color:#374151;">
-            Sporingen kan bruke litt tid på Ã¥ bli synlig etter at sendingen er registrert hos Bring.
+            Sporingen kan bruke litt tid på å bli synlig etter at sendingen er registrert hos Bring.
           </div>
 
           <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:#4b5563;">
@@ -286,7 +286,8 @@ async function sendShipmentEmail(params: {
   `;
 
   const result = await resend.emails.send({
-    from: 'Eiksenteret Sortland <onboarding@resend.dev>',
+    from: 'Eiksenteret Sortland | Tilbudsboden <ordre@tilbudsboden.no>',
+    replyTo: 'sortland@eiksenteret.no',
     to: [recipient],
     subject: `${testMode ? '[TEST] ' : ''}Varen din er registrert for sending | Ordre ${orderId}`,
     html,

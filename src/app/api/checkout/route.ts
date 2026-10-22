@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
 
 // Heads-up til butikken og mottaker for kundesvar
-const STORE_EMAIL_ADDRESS = 'sortland@eiksenteret.com';
+const STORE_EMAIL_ADDRESS = 'sortland@eiksenteret.no';
 
 interface CheckoutProduct {
   id: string;
@@ -162,7 +162,7 @@ async function sendOrderEmails(params: {
               <!-- Kontakt -->
               <div style="text-align:center; font-size:13.5px; color:#64748b; line-height:1.6;">
                 Har du spørsmål om din ordre?<br>
-                Eiksenteret Sortland · Tlf: <strong>76 12 13 60</strong> · <a href="mailto:sortland@eiksenteret.com" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.com</a>
+                Eiksenteret Sortland · Tlf: <strong>76 12 13 60</strong> · <a href="mailto:sortland@eiksenteret.no" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.no</a>
               </div>
 
             </td>
@@ -260,7 +260,7 @@ async function sendOrderEmails(params: {
   `;
 
   const customerResult = await resend.emails.send({
-    from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
+    from: 'Eiksenteret Sortland | Tilbudsboden <ordre@tilbudsboden.no>',
     to: [customer.email],
     replyTo: STORE_EMAIL_ADDRESS,
     subject: `Ordrebekreftelse ${safe.orderReference} | ${product.name}`,
@@ -268,7 +268,7 @@ async function sendOrderEmails(params: {
   });
 
   const storeResult = await resend.emails.send({
-    from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
+    from: 'Eiksenteret Sortland | Tilbudsboden <ordre@tilbudsboden.no>',
     to: [STORE_EMAIL_ADDRESS],
     replyTo: customer.email,
     subject: `Ny nettordre ${safe.orderReference} | ${product.itemNumber || product.name}`,
