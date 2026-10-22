@@ -215,10 +215,10 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={scrollToProducts}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#ff8458] to-[#ff5b24] px-8 py-3.5 text-base font-black text-white shadow-[0_8px_25px_rgba(255,91,36,0.35)] ring-1 ring-black/10 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-105 hover:from-[#ff966e] hover:to-[#e54812] hover:shadow-[0_12px_32px_rgba(255,91,36,0.50)] active:translate-y-0 active:scale-100 sm:text-lg"
+                  className="inline-flex items-center gap-2 rounded-lg border border-red-400/40 bg-red-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-[0_6px_18px_rgba(220,38,38,0.28)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-[0_9px_24px_rgba(220,38,38,0.38)] active:translate-y-0 sm:px-6 sm:py-3 sm:text-base"
                 >
-                  <span>🟧 Vis tilbudene</span>
-                  <ChevronDown className="h-5 w-5" />
+                  <span>Se dagens tilbud</span>
+                  <ChevronDown className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -231,7 +231,7 @@ export default function HomePage() {
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:justify-center">
           {[
             'Direkte fra lageret på Sortland',
-            'Full garanti og reklamasjonsrett',
+            'Trygg handel hos Eiksenteret Sortland',
             'Hent i butikk eller få levert',
           ].map((item, index) => (
             <div
