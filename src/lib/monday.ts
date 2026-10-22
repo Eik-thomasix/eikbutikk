@@ -181,38 +181,63 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           '<p>Ingen detaljert beskrivelse tilgjengelig.</p>';
 
         const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'svg']);
-        let imageList = (item.assets || [])
-          .filter((asset) => {
-            const extension = asset.file_extension?.toLowerCase().replace('.', '');
-            if (extension) return imageExtensions.has(extension);
-            const fileName = asset.name?.toLowerCase() || '';
-            return Array.from(imageExtensions).some((allowed) => fileName.endsWith(`.${allowed}`));
-          })
-          .map((asset) => asset.public_url || asset.url || '')
-          .filter((url): url is string => typeof url === 'string' && url.startsWith('http'));
+        const MAIN_IMAGE_COLUMN_ID = 'file_mm73rhsd';
+        const MORE_IMAGES_COLUMN_ID = 'file_mm8ce6gw';
 
-        imageList = Array.from(new Set(imageList));
-        const imageColumn = getColumnObject('Bilder') || getColumnObject('Bilde');
+        const isImageAsset = (asset: MondayAsset) => {
+          const extension = asset.file_extension?.toLowerCase().replace('.', '');
+          if (extension) return imageExtensions.has(extension);
+          const fileName = asset.name?.toLowerCase() || '';
+          return Array.from(imageExtensions).some((allowed) => fileName.endsWith(`.${allowed}`));
+        };
 
-        if (imageList.length === 0 && imageColumn?.text) {
-          imageList.push(...imageColumn.text.split(',').map((url) => url.trim()).filter((url) => url.startsWith('http')));
-        }
+        const assetUrl = (asset: MondayAsset) => asset.public_url || asset.url || '';
 
-        if (imageList.length === 0 && imageColumn?.value) {
+        const parseFileIds = (column?: MondayColumnValue): Set<string> => {
+          if (!column?.value) return new Set();
           try {
-            const parsedValue = JSON.parse(imageColumn.value);
-            const files = Array.isArray(parsedValue?.files) ? parsedValue.files : [];
-            imageList.push(
-              ...files
-                .map((file: { url?: string; public_url?: string }) => file.public_url || file.url || '')
-                .filter((url: string) => typeof url === 'string' && url.startsWith('http'))
+            const parsed = JSON.parse(column.value);
+            const files = Array.isArray(parsed?.files) ? parsed.files : [];
+            return new Set(
+              files
+                .map((file: { assetId?: string | number; id?: string | number }) =>
+                  String(file.assetId ?? file.id ?? '').trim()
+                )
+                .filter(Boolean)
             );
           } catch {
-            console.warn(`Kunne ikke tolke bildefeltet for "${item.name}".`);
+            return new Set();
           }
+        };
+
+        const allImageAssets = (item.assets || []).filter(isImageAsset);
+        const mainImageIds = parseFileIds(getColumnById(MAIN_IMAGE_COLUMN_ID));
+        const moreImageIds = parseFileIds(getColumnById(MORE_IMAGES_COLUMN_ID));
+
+        const mainImages = allImageAssets
+          .filter((asset) => asset.id && mainImageIds.has(String(asset.id)))
+          .map(assetUrl)
+          .filter((url): url is string => typeof url === 'string' && url.startsWith('http'));
+
+        const moreImages = allImageAssets
+          .filter((asset) => asset.id && moreImageIds.has(String(asset.id)))
+          .map(assetUrl)
+          .filter((url): url is string => typeof url === 'string' && url.startsWith('http'));
+
+        let imageList = Array.from(new Set([...mainImages, ...moreImages]));
+
+        // Fallback for older product rows: preserve the previous behavior if the
+        // dedicated image columns are empty or Monday has not returned file IDs.
+        if (imageList.length === 0) {
+          imageList = Array.from(
+            new Set(
+              allImageAssets
+                .map(assetUrl)
+                .filter((url): url is string => typeof url === 'string' && url.startsWith('http'))
+            )
+          );
         }
 
-        imageList = Array.from(new Set(imageList));
         if (imageList.length === 0) imageList = ['/EIKLOGO.png'];
 
         const listPrice =
