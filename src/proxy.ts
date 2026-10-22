@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // 1. Unnta Next.js sin bilde-optimizer, statiske filer, API og bilder
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
@@ -15,33 +14,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Unnta salgsvilkår
-  if (pathname.startsWith('/vilkar')) {
+  if (pathname.startsWith('/vilkar') || pathname.startsWith('/angreskjema')) {
     return NextResponse.next();
   }
 
-  // 3. Unnta kunder som returnerer fra Vipps
   if (searchParams.has('vipps_order') || searchParams.has('status')) {
     return NextResponse.next();
   }
 
-  // 4. Sjekk innloggings-cookie
-  const authCookie = request.cookies.get('site_access');
-  if (authCookie?.value === 'authenticated') {
+  if (request.cookies.get('site_access')?.value === 'authenticated') {
     return NextResponse.next();
   }
 
-  // 5. Unnta innloggingssiden
   if (pathname === '/login') {
     return NextResponse.next();
   }
 
-  // Send uautentiserte brukere til passordskjermen
-  const loginUrl = new URL('/login', request.url);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.redirect(new URL('/login', request.url));
 }
 
 export const config = {
-  // Pass på at _next/image eksplisitt unntas fra matcher
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
