@@ -37,8 +37,8 @@ export async function getVippsAccessToken(): Promise<string> {
   const data = await response.json();
 
   if (!response.ok) {
-    console.error('❌ Feil ved henting av Vipps access token:', data);
-    throw new Error(`Vipps Autentisering feilet: ${data.message || response.statusText}`);
+    console.error('Feil ved henting av Vipps access token:', data);
+    throw new Error(`Vipps autentisering feilet: ${data.message || response.statusText}`);
   }
 
   return data.access_token;
@@ -102,7 +102,7 @@ export async function createVippsPaymentOrder(params: {
   const data = await response.json();
 
   if (!response.ok) {
-    console.error('❌ Vipps betalingsopprettelse feilet:', JSON.stringify(data));
+    console.error('Vipps betalingsopprettelse feilet:', JSON.stringify(data));
     throw new Error(
       data.message || data[0]?.errorMessage || 'Kunne ikke opprette betaling hos Vipps.'
     );
@@ -130,9 +130,97 @@ export async function getVippsPaymentStatus(reference: string) {
   const data = await response.json();
 
   if (!response.ok) {
-    console.error('❌ Henting av Vipps-status feilet:', JSON.stringify(data));
+    console.error('Henting av Vipps-status feilet:', JSON.stringify(data));
     throw new Error(data.message || 'Kunne ikke hente betalingsstatus fra Vipps.');
   }
 
   return data;
+}
+
+
+export async function captureVippsPayment(params: {
+  reference: string;
+  amountInNok: number;
+}) {
+  const reference = params.reference.trim();
+  if (!/^[a-zA-Z0-9-]{8,64}$/.test(reference)) {
+    throw new Error('Vipps-referansen er ugyldig.');
+  }
+
+  const amountInEre = Math.round(Number(params.amountInNok) * 100);
+  if (!Number.isInteger(amountInEre) || amountInEre <= 0) {
+    throw new Error('Capture-beløpet er ugyldig.');
+  }
+
+  const current = await getVippsPaymentStatus(reference);
+  const currentState = String(current?.state || 'UNKNOWN').toUpperCase();
+  const alreadyCaptured = Number(current?.aggregate?.capturedAmount?.value || 0);
+
+  if (currentState === 'CAPTURED' && alreadyCaptured >= amountInEre) {
+    return {
+      success: true,
+      alreadyCaptured: true,
+      state: currentState,
+      capturedAmountInEre: alreadyCaptured,
+    };
+  }
+
+  if (currentState !== 'AUTHORIZED') {
+    throw new Error(
+      `Vipps-betalingen kan ikke captures fra status ${currentState}.`
+    );
+  }
+
+  const baseUrl = getVippsBaseUrl();
+  const token = await getVippsAccessToken();
+  const response = await fetch(
+    `${baseUrl}/epayment/v1/payments/${reference}/capture`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'Ocp-Apim-Subscription-Key':
+          process.env.VIPPS_SUBSCRIPTION_KEY || '',
+        'Merchant-Serial-Number':
+          process.env.VIPPS_MERCHANT_SERIAL_NUMBER || '',
+        'Idempotency-Key': `${reference}-capture-full`,
+        'Vipps-System-Name': 'tilbudsboden',
+        'Vipps-System-Version': '1.0.0',
+      },
+      body: JSON.stringify({
+        modificationAmount: {
+          currency: 'NOK',
+          value: amountInEre,
+        },
+      }),
+      cache: 'no-store',
+    }
+  );
+
+  const data = await response.json();
+  if (!response.ok) {
+    console.error('Vipps capture feilet:', JSON.stringify(data));
+    throw new Error(
+      data?.message ||
+        data?.[0]?.errorMessage ||
+        'Vipps avviste capture-forespørselen.'
+    );
+  }
+
+  const capturedAmountInEre = Number(
+    data?.aggregate?.capturedAmount?.value || 0
+  );
+  if (capturedAmountInEre < amountInEre) {
+    throw new Error(
+      `Vipps bekreftet ikke hele capture-beløpet. Forventet ${amountInEre} øre, bekreftet ${capturedAmountInEre} øre.`
+    );
+  }
+
+  return {
+    success: true,
+    alreadyCaptured: false,
+    state: 'CAPTURED',
+    capturedAmountInEre,
+  };
 }

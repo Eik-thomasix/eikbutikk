@@ -5,7 +5,7 @@ import { getVippsPaymentStatus } from '@/lib/vipps';
 const ORDER_GROUPS = {
   paid: 'group_mm73t3k9', // Gruppe-ID for 'Betalt'
   processing: 'group_mm73ae8b', // Gruppe-ID for 'Behandles'
-  pending: 'group_mm738d0y', // Gruppe-ID for 'Venter pÃ¥ betaling'
+  pending: 'group_mm738d0y', // Gruppe-ID for 'Venter pÃƒÂ¥ betaling'
   completed: 'group_mm73mky8', // Gruppe-ID for 'Sendt / Hentet'
   cancelled: 'group_mm7317nf', // Gruppe-ID for 'Avbrutt'
 } as const;
@@ -255,7 +255,7 @@ function validateStoredOrder(data: unknown): asserts data is StoredOrderData {
     !order.customer?.email ||
     !order.customer?.phone
   ) {
-    throw new Error('Produkt JSON mangler nÃ¸dvendige ordreopplysninger.');
+    throw new Error('Produkt JSON mangler nÃƒÂ¸dvendige ordreopplysninger.');
   }
 }
 
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
           success: false,
           verified: false,
           state,
-          message: 'Vipps-betalingen ble ikke fullfÃ¸rt.',
+          message: 'Vipps-betalingen ble ikke fullfÃƒÂ¸rt.',
         },
         { status: 409 }
       );
@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
           verified: false,
           pending: true,
           state,
-          message: 'Betalingen er ikke ferdig behandlet hos Vipps ennÃ¥.',
+          message: 'Betalingen er ikke ferdig behandlet hos Vipps ennÃƒÂ¥.',
         },
         { status: 409 }
       );
@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // AVSKJÃ†R DOBBELSENDING DERSOM BOKS ER HAKKET AV ELLER ER BETALT
+    // AVSKJÃƒâ€ R DOBBELSENDING DERSOM BOKS ER HAKKET AV ELLER ER BETALT
     const paymentStatusText = getColumn(mondayOrder, ORDER_COLUMNS.paymentStatus)?.text?.trim().toLowerCase();
     if (isChecked(getColumn(mondayOrder, ORDER_COLUMNS.stockUpdated)) || paymentStatusText === 'betalt') {
       console.log(`Ordre ${reference} er allerede ferdigbehandlet. Hopper over dobbel e-post.`);
@@ -373,7 +373,7 @@ export async function POST(request: NextRequest) {
       getColumn(mondayOrder, ORDER_COLUMNS.productJson)
     );
     if (!productJson) {
-      throw new Error('Produkt JSON er tom pÃ¥ Monday-ordren.');
+      throw new Error('Produkt JSON er tom pÃƒÂ¥ Monday-ordren.');
     }
 
     let storedOrder: unknown;
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
 
     validateStoredOrder(storedOrder);
 
-    // Marker behandlingen som pågående, men ikke sett stockUpdated før checkout er bekreftet.
+    // Marker behandlingen som pÃ¥gÃ¥ende, men ikke sett stockUpdated fÃ¸r checkout er bekreftet.
     const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
     await updateMondayOrder({
       apiKey: mondayApiKey,
@@ -430,15 +430,15 @@ export async function POST(request: NextRequest) {
         boardId: orderBoardId,
         itemId: mondayOrder.id,
         columnValues: {
-          [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
+          [ORDER_COLUMNS.orderStatus]: { label: 'Venter pÃ¥ betaling' },
         },
       });
       throw new Error(
-        checkoutData?.message || 'Checkout fullførte ikke lagertrekket.'
+        checkoutData?.message || 'Checkout fullfÃ¸rte ikke lagertrekket.'
       );
     }
 
-    // Først nå er lagertrekket bekreftet og ordren kan merkes ferdigbehandlet.
+    // FÃ¸rst nÃ¥ er lagertrekket bekreftet og ordren kan merkes ferdigbehandlet.
     await updateMondayOrder({
       apiKey: mondayApiKey,
       boardId: orderBoardId,
@@ -453,28 +453,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const deliveryMethod =
-      storedOrder.customer.deliveryMethod || storedOrder.shipping?.deliveryMethod;
 
-    if (deliveryMethod === 'Postsending') {
-      const adminSecret = process.env.BRING_ADMIN_SECRET?.trim();
-      if (adminSecret) {
-        try {
-          await fetch(`${getInternalBaseUrl(request)}/api/bring/create-shipment`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-secret': adminSecret,
-            },
-            body: JSON.stringify({ orderId: reference }),
-            cache: 'no-store',
-          });
-        } catch (bringErr) {
-          console.error(`Bring-booking feilet for ${reference}:`, bringErr);
-        }
-      }
-    }
-
+    // Bring-booking og Vipps capture startes først når Monday-status settes til Klar for sending.
     return NextResponse.json({
       success: true,
       verified: true,
@@ -492,7 +472,7 @@ export async function POST(request: NextRequest) {
         message:
           error instanceof Error
             ? error.message
-            : 'Kunne ikke fullfÃ¸re Vipps-ordren.',
+            : 'Kunne ikke fullfÃƒÂ¸re Vipps-ordren.',
       },
       { status: 500 }
     );

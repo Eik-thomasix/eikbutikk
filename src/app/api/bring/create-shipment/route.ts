@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { captureVippsPayment } from '@/lib/vipps';
 
 const BRING_BOOKING_URL = 'https://api.bring.com/booking/api/create';
 const BRING_PRODUCT_ID = '5800';
@@ -42,6 +43,9 @@ type StoredOrder = {
     name: string;
     itemNumber?: string;
     weight?: number;
+    salePrice?: number;
+    shippingPrice?: number;
+    totalPrice?: number;
   };
   customer: {
     name: string;
@@ -119,6 +123,18 @@ function parseLongText(column?: MondayColumnValue): string {
     return column.value;
   }
   return '';
+}
+
+function getOrderTotal(order: StoredOrder): number {
+  const salePrice = Number(order.product.salePrice || 0);
+  const shippingPrice = Number(order.product.shippingPrice || 0);
+  const storedTotal = Number(order.product.totalPrice || 0);
+  const total = storedTotal > 0 ? storedTotal : salePrice + shippingPrice;
+
+  if (!Number.isFinite(total) || total <= 0) {
+    throw new Error('Ordren mangler gyldig totalbeløp for Vipps capture.');
+  }
+  return total;
 }
 
 async function mondayRequest(
@@ -351,6 +367,19 @@ export async function POST(request: NextRequest) {
       return jsonError('Bring-etikett kan bare genereres for Postsending.', 409);
     }
 
+    if (process.env.VIPPS_CAPTURE_ENABLED !== 'true') {
+      return jsonError(
+        'Vipps capture er ikke aktivert. Sending ble ikke opprettet.',
+        503
+      );
+    }
+
+    const orderTotal = getOrderTotal(storedOrder);
+    const captureResult = await captureVippsPayment({
+      reference: orderId,
+      amountInNok: orderTotal,
+    });
+
     const packageData = await getPackageData(
       mondayApiKey,
       storedOrder.product.id
@@ -474,7 +503,10 @@ export async function POST(request: NextRequest) {
       trackingNumber,
       trackingUrl,
       labelUrl,
-      message: 'Bring-sending opprettet og oppdatert i Monday.',
+      vippsCaptured: true,
+      vippsAlreadyCaptured: captureResult.alreadyCaptured,
+      capturedAmountInEre: captureResult.capturedAmountInEre,
+      message: 'Vipps-betalingen ble bekreftet captured før Bring-sendingen ble opprettet.',
     });
   } catch (error) {
     console.error('Feil i /api/bring/create-shipment:', error);
