@@ -227,7 +227,7 @@ async function updatePickupOrder(params: {
       $boardId: ID!
       $itemId: ID!
       $values: JSON!
-      $groupId: String
+      $groupId: String!
     ) {
       change_multiple_column_values(
         board_id: $boardId
