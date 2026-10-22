@@ -382,6 +382,7 @@ async function sendPickupReadyEmail(params: {
               <strong>Produkt:</strong> ${safe.productName}<br>
               <strong>Varenummer:</strong> ${safe.itemNumber}<br>
               <strong>Hentested:</strong> Verkstedveien 2, 8402 Sortland<br>
+              <strong>Åpningstider:</strong> Mandag–fredag kl. 08:00–16:00<br>
               <strong>Ordrenummer:</strong> ${safe.orderId}
             </div>
             <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.55;">Oppgi gjerne ordrenummeret ved henting. Spørsmål? Ring 76 12 13 60 eller svar på denne e-posten.</p>
