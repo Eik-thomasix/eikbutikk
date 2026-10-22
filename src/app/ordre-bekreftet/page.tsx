@@ -42,17 +42,17 @@ function OrderConfirmedContent() {
           </p>
 
           <h1 className="mb-4 text-3xl font-extrabold text-gray-900">
-            Takk for handelen!
+            Bestillingen er mottatt!
           </h1>
 
           <p className="mx-auto mb-3 max-w-md text-gray-700">
-            Betalingen er godkjent, og bestillingen er registrert hos
+            Betalingen er godkjent i Vipps, og ordren er registrert hos
             Eiksenteret Sortland.
           </p>
 
           <p className="mx-auto mb-7 max-w-md text-sm leading-relaxed text-gray-500">
-            Bestillingen blir behandlet manuelt. Du blir kontaktet dersom vi
-            trenger flere opplysninger om henting eller levering.
+            Vi kontrollerer varen og gjør bestillingen klar. Du får beskjed når
+            varen er registrert for sending eller klar for henting.
           </p>
 
           <div className="mb-7 rounded-xl border border-gray-200 bg-gray-50 p-5">
