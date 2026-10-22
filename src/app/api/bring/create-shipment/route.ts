@@ -5,12 +5,13 @@ const BRING_BOOKING_URL = 'https://api.bring.com/booking/api/create';
 const BRING_PRODUCT_ID = '5800';
 
 // Gruppe-ID for 'Betalt' i stedet for 'Sendt / Hentet'
-const PAID_GROUP_ID = 'group_mm73ae8b';
+const COMPLETED_GROUP_ID = 'group_mm73mky8';
 
 const ORDER_COLUMNS = {
   orderNumber: 'text_mm73e37c',
   paymentStatus: 'color_mm73ta14',
   orderStatus: 'color_mm73zcsm',
+  vippsStatus: 'color_mm73pqa6',
   trackingNumber: 'text_mm75q5sa',
   shippingDate: 'date_mm75z9jw',
   bringPdf: 'link_mm75mrj7',
@@ -266,7 +267,7 @@ async function updateOrderAfterBooking(params: {
         item_id: $itemId
         column_values: $values
       ) { id }
-      move_item_to_group(item_id: $itemId, group_id: "${PAID_GROUP_ID}") {
+      move_item_to_group(item_id: $itemId, group_id: "${COMPLETED_GROUP_ID}") {
         id
       }
     }
@@ -281,8 +282,9 @@ async function updateOrderAfterBooking(params: {
         url: params.labelUrl,
         text: 'Åpne Bring-etikett',
       },
-      [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
+      [ORDER_COLUMNS.orderStatus]: { label: 'Sendt' },
       [ORDER_COLUMNS.paymentStatus]: { label: 'Betalt' },
+      [ORDER_COLUMNS.vippsStatus]: { label: 'Captured' },
     }),
   });
 }
