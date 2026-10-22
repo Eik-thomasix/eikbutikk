@@ -73,8 +73,8 @@ async function sendOrderEmails(params: {
 
   const isPickup = customer.deliveryMethod === 'Henting i butikk';
   const deliveryText = isPickup
-    ? 'Varen klargjÃ¸res for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du fÃ¥r en e-post/SMS sÃ¥ snart varen er klar.'
-    : `Varen klargjÃ¸res for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du fÃ¥r beskjed med sporingsnummer nÃ¥r pakken er sendt.`;
+    ? 'Varen klargjøres for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du får en e-post/SMS så snart varen er klar.'
+    : `Varen klargjøres for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du får beskjed med sporingsnummer når pakken er sendt.`;
 
   // 1. E-post til kunden
   const customerEmailHtml = `
@@ -93,7 +93,7 @@ async function sendOrderEmails(params: {
         
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
           
-          <!-- RÃ¸dt toppbanner -->
+          <!-- Rødt toppbanner -->
           <tr>
             <td style="background-color:#d71920; padding:28px 32px; text-align:left;">
               <div style="color:#ffffff; font-size:26px; font-weight:800; letter-spacing:-0.5px; line-height:1.1;">Tilbudsboden.no</div>
@@ -115,7 +115,7 @@ async function sendOrderEmails(params: {
               </h1>
               
               <p style="margin:0 0 28px 0; font-size:15px; color:#475569; line-height:1.6;">
-                Betalingen din er registrert med Vipps. Vi har mottatt ordren din og gjÃ¸r den nÃ¥ klar hos Eiksenteret Sortland.
+                Vipps har godkjent betalingsreservasjonen. Vi har mottatt ordren din hos Eiksenteret Sortland og behandler bestillingen videre.
               </p>
 
               <!-- Produktblokk -->
@@ -144,7 +144,7 @@ async function sendOrderEmails(params: {
                   <td align="right" style="padding:6px 0; font-weight:600; color:#0f172a;">${money(shippingPrice)}</td>
                 </tr>
                 <tr>
-                  <td style="padding:14px 0 0 0; font-size:17px; font-weight:700; color:#0f172a; border-top:1px solid #e2e8f0;">Totalt betalt</td>
+                  <td style="padding:14px 0 0 0; font-size:17px; font-weight:700; color:#0f172a; border-top:1px solid #e2e8f0;">Ordretotal</td>
                   <td align="right" style="padding:14px 0 0 0; font-size:20px; font-weight:800; color:#d71920; border-top:1px solid #e2e8f0;">${money(totalPrice)}</td>
                 </tr>
               </table>
@@ -161,8 +161,8 @@ async function sendOrderEmails(params: {
 
               <!-- Kontakt -->
               <div style="text-align:center; font-size:13.5px; color:#64748b; line-height:1.6;">
-                Har du spÃ¸rsmÃ¥l om din ordre?<br>
-                Eiksenteret Sortland Â· Tlf: <strong>76 12 13 60</strong> Â· <a href="mailto:sortland@eiksenteret.com" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.com</a>
+                Har du spørsmål om din ordre?<br>
+                Eiksenteret Sortland · Tlf: <strong>76 12 13 60</strong> · <a href="mailto:sortland@eiksenteret.com" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.com</a>
               </div>
 
             </td>
@@ -171,7 +171,7 @@ async function sendOrderEmails(params: {
           <!-- Footer -->
           <tr>
             <td style="background-color:#f8fafc; border-top:1px solid #e2e8f0; padding:20px; text-align:center; font-size:12px; color:#94a3b8;">
-              Eiksenteret Sortland Â· Verkstedveien 2, 8402 Sortland
+              Eiksenteret Sortland · Verkstedveien 2, 8402 Sortland
             </td>
           </tr>
 
@@ -201,7 +201,7 @@ async function sendOrderEmails(params: {
           
           <tr style="background-color:#0f172a; color:#ffffff;">
             <td style="padding:24px 32px;">
-              <div style="font-size:18px; font-weight:700;">Nytt salg i Tilbudsboden.no</div>
+              <div style="font-size:18px; font-weight:700;">Ny nettordre i Tilbudsboden.no</div>
               <div style="font-size:13px; color:#94a3b8; margin-top:2px;">Ordrenummer: ${safe.orderReference}</div>
             </td>
           </tr>
@@ -210,11 +210,11 @@ async function sendOrderEmails(params: {
             <td style="padding:32px;">
               
               <div style="background-color:#fff7ed; border:1px solid #ffedd5; color:#9a3412; border-radius:10px; padding:16px; margin-bottom:24px; font-size:13.5px; line-height:1.6;">
-                <strong>Sjekkliste for butikk:</strong><br>
-                1. Kontroller lagerbeholdning og klargjÃ¸r varen for levering.<br>
-                2. Opprett salgsordre/faktura i SAP B1.<br>
-                3. Husk Ã¥ fakturere ordren via kassen, og velg <strong>mobilbetaling</strong>.<br>
-                4. Oppdater status i ordreboardet i Monday nÃ¥r ordren er ferdig behandlet.
+                <strong>Ordren er mottatt og lageret er trukket i Tilbudsboden.</strong><br>
+                1. Kontroller varen fysisk før utlevering eller sending.<br>
+                2. Opprett eller fullfør salgsordre/fakturagrunnlag i SAP B1 etter gjeldende rutine.<br>
+                3. Kontroller Vipps-status før eventuell belastning eller annen sluttføring.<br>
+                4. Oppdater ordrestatus i Monday når varen er ferdig behandlet.
               </div>
 
               <h2 style="font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#d71920; margin:0 0 12px 0;">Kunde & Levering</h2>
@@ -226,12 +226,12 @@ async function sendOrderEmails(params: {
                 <tr><td style="padding:6px 0; color:#64748b;">Adresse:</td><td style="padding:6px 0; font-weight:600; color:#0f172a;">${safe.address}, ${safe.postalCode} ${safe.city}</td></tr>
               </table>
 
-              <h2 style="font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#d71920; margin:0 0 12px 0;">Ordredetaljer (SAP B1)</h2>
+              <h2 style="font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#d71920; margin:0 0 12px 0;">Ordredetaljer</h2>
               <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font-size:14px;">
                 <tr style="border-bottom:2px solid #0f172a;">
                   <th align="left" style="padding:8px 0; color:#0f172a; font-weight:700;">Varenr.</th>
                   <th align="left" style="padding:8px 0; color:#0f172a; font-weight:700;">Beskrivelse</th>
-                  <th align="right" style="padding:8px 0; color:#0f172a; font-weight:700;">BelÃ¸p</th>
+                  <th align="right" style="padding:8px 0; color:#0f172a; font-weight:700;">Beløp</th>
                 </tr>
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${safe.itemNumber || '-'}</td>
@@ -243,7 +243,7 @@ async function sendOrderEmails(params: {
                   <td align="right" style="padding:8px 0; font-weight:600;">${money(shippingPrice)}</td>
                 </tr>
                 <tr>
-                  <td colspan="2" style="padding:12px 0 0 0; font-size:15px; font-weight:700; color:#0f172a; border-top:1px solid #e2e8f0;">Totalt betalt</td>
+                  <td colspan="2" style="padding:12px 0 0 0; font-size:15px; font-weight:700; color:#0f172a; border-top:1px solid #e2e8f0;">Ordretotal</td>
                   <td align="right" style="padding:12px 0 0 0; font-size:16px; font-weight:800; color:#d71920; border-top:1px solid #e2e8f0;">${money(totalPrice)}</td>
                 </tr>
               </table>
@@ -263,7 +263,7 @@ async function sendOrderEmails(params: {
     from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
     to: [customer.email],
     replyTo: STORE_EMAIL_ADDRESS,
-    subject: `Ordrebekreftelse ${safe.orderReference} Â· ${product.name}`,
+    subject: `Ordrebekreftelse ${safe.orderReference} | ${product.name}`,
     html: customerEmailHtml,
   });
 
@@ -271,7 +271,7 @@ async function sendOrderEmails(params: {
     from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
     to: [STORE_EMAIL_ADDRESS],
     replyTo: customer.email,
-    subject: `Ny ordre ${safe.orderReference} Â· ${product.itemNumber || product.name}`,
+    subject: `Ny nettordre ${safe.orderReference} | ${product.itemNumber || product.name}`,
     html: storeEmailHtml,
   });
 
@@ -481,7 +481,7 @@ export async function POST(request: NextRequest) {
         message:
           error instanceof Error
             ? error.message
-            : 'Kunne ikke fullfÃ¸re ordren.',
+            : 'Kunne ikke fullføre ordren.',
       },
       { status: 500 }
     );
