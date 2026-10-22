@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
@@ -73,8 +73,8 @@ async function sendOrderEmails(params: {
 
   const isPickup = customer.deliveryMethod === 'Henting i butikk';
   const deliveryText = isPickup
-    ? 'Varen klargjøres for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du får en e-post/SMS så snart varen er klar.'
-    : `Varen klargjøres for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du får beskjed med sporingsnummer når pakken er sendt.`;
+    ? 'Varen klargjÃ¸res for henting hos Eiksenteret Sortland (Verkstedveien 2, 8402 Sortland). Du fÃ¥r en e-post/SMS sÃ¥ snart varen er klar.'
+    : `Varen klargjÃ¸res for postsending til <strong>${safe.address}, ${safe.postalCode} ${safe.city}</strong>. Du fÃ¥r beskjed med sporingsnummer nÃ¥r pakken er sendt.`;
 
   // 1. E-post til kunden
   const customerEmailHtml = `
@@ -93,7 +93,7 @@ async function sendOrderEmails(params: {
         
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
           
-          <!-- Rødt toppbanner -->
+          <!-- RÃ¸dt toppbanner -->
           <tr>
             <td style="background-color:#d71920; padding:28px 32px; text-align:left;">
               <div style="color:#ffffff; font-size:26px; font-weight:800; letter-spacing:-0.5px; line-height:1.1;">Tilbudsboden.no</div>
@@ -115,7 +115,7 @@ async function sendOrderEmails(params: {
               </h1>
               
               <p style="margin:0 0 28px 0; font-size:15px; color:#475569; line-height:1.6;">
-                Betalingen din er registrert med Vipps. Vi har mottatt ordren din og gjør den nå klar hos Eiksenteret Sortland.
+                Betalingen din er registrert med Vipps. Vi har mottatt ordren din og gjÃ¸r den nÃ¥ klar hos Eiksenteret Sortland.
               </p>
 
               <!-- Produktblokk -->
@@ -161,8 +161,8 @@ async function sendOrderEmails(params: {
 
               <!-- Kontakt -->
               <div style="text-align:center; font-size:13.5px; color:#64748b; line-height:1.6;">
-                Har du spørsmål om din ordre?<br>
-                Eiksenteret Sortland · Tlf: <strong>76 12 13 60</strong> · <a href="mailto:sortland@eiksenteret.com" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.com</a>
+                Har du spÃ¸rsmÃ¥l om din ordre?<br>
+                Eiksenteret Sortland Â· Tlf: <strong>76 12 13 60</strong> Â· <a href="mailto:sortland@eiksenteret.com" style="color:#d71920; text-decoration:none; font-weight:600;">sortland@eiksenteret.com</a>
               </div>
 
             </td>
@@ -171,7 +171,7 @@ async function sendOrderEmails(params: {
           <!-- Footer -->
           <tr>
             <td style="background-color:#f8fafc; border-top:1px solid #e2e8f0; padding:20px; text-align:center; font-size:12px; color:#94a3b8;">
-              Eiksenteret Sortland · Verkstedveien 2, 8402 Sortland
+              Eiksenteret Sortland Â· Verkstedveien 2, 8402 Sortland
             </td>
           </tr>
 
@@ -211,10 +211,10 @@ async function sendOrderEmails(params: {
               
               <div style="background-color:#fff7ed; border:1px solid #ffedd5; color:#9a3412; border-radius:10px; padding:16px; margin-bottom:24px; font-size:13.5px; line-height:1.6;">
                 <strong>Sjekkliste for butikk:</strong><br>
-                1. Kontroller lagerbeholdning og klargjør varen for levering.<br>
+                1. Kontroller lagerbeholdning og klargjÃ¸r varen for levering.<br>
                 2. Opprett salgsordre/faktura i SAP B1.<br>
-                3. Husk å fakturere ordren via kassen, og velg <strong>mobilbetaling</strong>.<br>
-                4. Oppdater status i ordreboardet i Monday når ordren er ferdig behandlet.
+                3. Husk Ã¥ fakturere ordren via kassen, og velg <strong>mobilbetaling</strong>.<br>
+                4. Oppdater status i ordreboardet i Monday nÃ¥r ordren er ferdig behandlet.
               </div>
 
               <h2 style="font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#d71920; margin:0 0 12px 0;">Kunde & Levering</h2>
@@ -231,7 +231,7 @@ async function sendOrderEmails(params: {
                 <tr style="border-bottom:2px solid #0f172a;">
                   <th align="left" style="padding:8px 0; color:#0f172a; font-weight:700;">Varenr.</th>
                   <th align="left" style="padding:8px 0; color:#0f172a; font-weight:700;">Beskrivelse</th>
-                  <th align="right" style="padding:8px 0; color:#0f172a; font-weight:700;">Beløp</th>
+                  <th align="right" style="padding:8px 0; color:#0f172a; font-weight:700;">BelÃ¸p</th>
                 </tr>
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-weight:600;">${safe.itemNumber || '-'}</td>
@@ -263,7 +263,7 @@ async function sendOrderEmails(params: {
     from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
     to: [customer.email],
     replyTo: STORE_EMAIL_ADDRESS,
-    subject: `Ordrebekreftelse ${safe.orderReference} · ${product.name}`,
+    subject: `Ordrebekreftelse ${safe.orderReference} Â· ${product.name}`,
     html: customerEmailHtml,
   });
 
@@ -271,7 +271,7 @@ async function sendOrderEmails(params: {
     from: 'Tilbudsboden.no <ordre@tilbudsboden.no>',
     to: [STORE_EMAIL_ADDRESS],
     replyTo: customer.email,
-    subject: `Ny ordre ${safe.orderReference} · ${product.itemNumber || product.name}`,
+    subject: `Ny ordre ${safe.orderReference} Â· ${product.itemNumber || product.name}`,
     html: storeEmailHtml,
   });
 
@@ -287,66 +287,69 @@ async function sendOrderEmails(params: {
 async function updateMondayStock(product: CheckoutProduct) {
   const mondayApiKey = process.env.MONDAY_API_KEY?.trim();
   const mondayBoardId = process.env.MONDAY_BOARD_ID?.trim();
-
   if (!mondayApiKey || !mondayBoardId) {
     throw new Error('Monday-konfigurasjonen for lager mangler.');
   }
 
-  const columnsQuery = `
-    query GetColumns($boardIds: [ID!]!) {
-      boards(ids: $boardIds) {
-        columns { id title }
+  const query = `
+    query GetProduct($itemIds: [ID!]!) {
+      items(ids: $itemIds) {
+        id
+        board { id }
+        column_values {
+          id
+          text
+          column { title }
+        }
       }
     }
   `;
-
-  const columnsResponse = await fetch('https://api.monday.com/v2', {
+  const queryResponse = await fetch('https://api.monday.com/v2', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: mondayApiKey,
       'API-Version': '2023-10',
     },
-    body: JSON.stringify({
-      query: columnsQuery,
-      variables: { boardIds: [mondayBoardId] },
-    }),
+    body: JSON.stringify({ query, variables: { itemIds: [product.id] } }),
     cache: 'no-store',
   });
-
-  const columnsData = await columnsResponse.json();
-  if (!columnsResponse.ok || columnsData.errors) {
+  const queryData = await queryResponse.json();
+  if (!queryResponse.ok || queryData.errors) {
     throw new Error(
-      columnsData?.errors?.[0]?.message ||
-        'Kunne ikke hente Monday-kolonner.'
+      queryData?.errors?.[0]?.message || 'Kunne ikke hente produktet fra Monday.'
     );
   }
 
-  const columns = columnsData?.data?.boards?.[0]?.columns || [];
+  const item = queryData?.data?.items?.[0];
+  if (!item || String(item.board?.id || '') !== mondayBoardId) {
+    throw new Error('Produktet ble ikke funnet på forventet produktboard.');
+  }
+
+  const columns = item.column_values || [];
   const stockColumn = columns.find(
-    (column: { title?: string }) =>
-      column.title?.trim().toLowerCase() === 'lager'
+    (column: { column?: { title?: string } }) =>
+      column.column?.title?.trim().toLowerCase() === 'lager'
   );
   const statusColumn = columns.find(
-    (column: { title?: string }) =>
-      column.title?.trim().toLowerCase() === 'status'
+    (column: { column?: { title?: string } }) =>
+      column.column?.title?.trim().toLowerCase() === 'status'
   );
-
   if (!stockColumn || !statusColumn) {
     throw new Error('Fant ikke kolonnene Lager og Status i Monday.');
   }
 
-  const currentStock =
-    typeof product.stock === 'number' ? product.stock : 1;
-  const newStock = Math.max(0, currentStock - 1);
-  const newStatus = newStock === 0 ? 'Utsolgt' : 'Aktiv';
+  const currentStock = Number.parseFloat(
+    String(stockColumn.text || '0').replace(/\s/g, '').replace(',', '.')
+  );
+  if (!Number.isFinite(currentStock) || currentStock <= 0) {
+    throw new Error('Produktet er utsolgt eller har ugyldig lagerbeholdning.');
+  }
 
+  const newStock = currentStock - 1;
+  const newStatus = newStock === 0 ? 'Utsolgt' : 'Aktiv';
   const mutation = `
-    mutation UpdateProduct(
-      $boardId: ID!
-      $itemId: ID!
-      $values: JSON!
-    ) {
+    mutation UpdateProduct($boardId: ID!, $itemId: ID!, $values: JSON!) {
       change_multiple_column_values(
         board_id: $boardId
         item_id: $itemId
@@ -354,7 +357,6 @@ async function updateMondayStock(product: CheckoutProduct) {
       ) { id }
     }
   `;
-
   const mutationResponse = await fetch('https://api.monday.com/v2', {
     method: 'POST',
     headers: {
@@ -375,25 +377,37 @@ async function updateMondayStock(product: CheckoutProduct) {
     }),
     cache: 'no-store',
   });
-
   const mutationData = await mutationResponse.json();
   if (!mutationResponse.ok || mutationData.errors) {
     throw new Error(
-      mutationData?.errors?.[0]?.message ||
-        'Kunne ikke oppdatere lager i Monday.'
+      mutationData?.errors?.[0]?.message || 'Kunne ikke oppdatere lager i Monday.'
     );
   }
 
-  console.log('Monday lager oppdatert:', {
+  console.log('Monday lager oppdatert fra fersk beholdning:', {
     productId: product.id,
     currentStock,
     newStock,
     newStatus,
   });
+  return { currentStock, newStock, newStatus };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const internalSecret = process.env.BRING_ADMIN_SECRET?.trim();
+    if (!internalSecret) {
+      return NextResponse.json(
+        { success: false, message: 'Intern ordrehemmelighet mangler.' },
+        { status: 503 }
+      );
+    }
+    if (request.headers.get('x-internal-secret') !== internalSecret) {
+      return NextResponse.json(
+        { success: false, message: 'Ikke autorisert.' },
+        { status: 401 }
+      );
+    }
     const body = await request.json();
     const product = body?.product as CheckoutProduct | undefined;
     const customer = body?.customer as CheckoutCustomer | undefined;
@@ -429,7 +443,7 @@ export async function POST(request: Request) {
       payment?.reference || body?.orderId || 'Ukjent ordrenummer'
     );
 
-    await updateMondayStock(product);
+    const stockResult = await updateMondayStock(product);
 
     if (process.env.RESEND_API_KEY) {
       try {
@@ -455,6 +469,8 @@ export async function POST(request: Request) {
       shippingPrice,
       totalPrice,
       customerEmail: customer.email,
+      stockUpdated: true,
+      stockResult,
     });
   } catch (error) {
     console.error('Kritisk feil ved behandling av ordre:', error);
@@ -465,7 +481,7 @@ export async function POST(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : 'Kunne ikke fullføre ordren.',
+            : 'Kunne ikke fullfÃ¸re ordren.',
       },
       { status: 500 }
     );

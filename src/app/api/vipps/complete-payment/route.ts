@@ -5,7 +5,7 @@ import { getVippsPaymentStatus } from '@/lib/vipps';
 const ORDER_GROUPS = {
   paid: 'group_mm73t3k9', // Gruppe-ID for 'Betalt'
   processing: 'group_mm73ae8b', // Gruppe-ID for 'Behandles'
-  pending: 'group_mm738d0y', // Gruppe-ID for 'Venter på betaling'
+  pending: 'group_mm738d0y', // Gruppe-ID for 'Venter pÃ¥ betaling'
   completed: 'group_mm73mky8', // Gruppe-ID for 'Sendt / Hentet'
   cancelled: 'group_mm7317nf', // Gruppe-ID for 'Avbrutt'
 } as const;
@@ -255,7 +255,7 @@ function validateStoredOrder(data: unknown): asserts data is StoredOrderData {
     !order.customer?.email ||
     !order.customer?.phone
   ) {
-    throw new Error('Produkt JSON mangler nødvendige ordreopplysninger.');
+    throw new Error('Produkt JSON mangler nÃ¸dvendige ordreopplysninger.');
   }
 }
 
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
           success: false,
           verified: false,
           state,
-          message: 'Vipps-betalingen ble ikke fullført.',
+          message: 'Vipps-betalingen ble ikke fullfÃ¸rt.',
         },
         { status: 409 }
       );
@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
           verified: false,
           pending: true,
           state,
-          message: 'Betalingen er ikke ferdig behandlet hos Vipps ennå.',
+          message: 'Betalingen er ikke ferdig behandlet hos Vipps ennÃ¥.',
         },
         { status: 409 }
       );
@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // AVSKJÆR DOBBELSENDING DERSOM BOKS ER HAKKET AV ELLER ER BETALT
+    // AVSKJÃ†R DOBBELSENDING DERSOM BOKS ER HAKKET AV ELLER ER BETALT
     const paymentStatusText = getColumn(mondayOrder, ORDER_COLUMNS.paymentStatus)?.text?.trim().toLowerCase();
     if (isChecked(getColumn(mondayOrder, ORDER_COLUMNS.stockUpdated)) || paymentStatusText === 'betalt') {
       console.log(`Ordre ${reference} er allerede ferdigbehandlet. Hopper over dobbel e-post.`);
@@ -373,7 +373,7 @@ export async function POST(request: NextRequest) {
       getColumn(mondayOrder, ORDER_COLUMNS.productJson)
     );
     if (!productJson) {
-      throw new Error('Produkt JSON er tom på Monday-ordren.');
+      throw new Error('Produkt JSON er tom pÃ¥ Monday-ordren.');
     }
 
     let storedOrder: unknown;
@@ -385,8 +385,60 @@ export async function POST(request: NextRequest) {
 
     validateStoredOrder(storedOrder);
 
-    // Sett lås på ordren i Monday FØR vi kaller e-post/checkout, og flytt til 'Betalt'-gruppen
+    // Marker behandlingen som pågående, men ikke sett stockUpdated før checkout er bekreftet.
     const vippsLabel = state === 'CAPTURED' ? 'Captured' : 'Autorisert';
+    await updateMondayOrder({
+      apiKey: mondayApiKey,
+      boardId: orderBoardId,
+      itemId: mondayOrder.id,
+      columnValues: {
+        [ORDER_COLUMNS.vippsStatus]: { label: vippsLabel },
+        [ORDER_COLUMNS.orderStatus]: { label: 'Behandles' },
+      },
+    });
+
+    const checkoutProduct = {
+      ...storedOrder.product,
+      shippingPrice: Number(
+        storedOrder.product.shippingPrice ?? storedOrder.shipping?.price ?? 0
+      ),
+      totalPrice: calculateExpectedTotal(storedOrder),
+    };
+    const internalSecret = process.env.BRING_ADMIN_SECRET?.trim();
+    if (!internalSecret) {
+      throw new Error('Intern ordrehemmelighet mangler.');
+    }
+
+    const checkoutResponse = await fetch(`${getInternalBaseUrl(request)}/api/checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': internalSecret,
+      },
+      body: JSON.stringify({
+        product: checkoutProduct,
+        customer: storedOrder.customer,
+        shipping: storedOrder.shipping,
+        payment: { reference, state },
+      }),
+      cache: 'no-store',
+    });
+    const checkoutData = await checkoutResponse.json();
+    if (!checkoutResponse.ok || !checkoutData.success || !checkoutData.stockUpdated) {
+      await updateMondayOrder({
+        apiKey: mondayApiKey,
+        boardId: orderBoardId,
+        itemId: mondayOrder.id,
+        columnValues: {
+          [ORDER_COLUMNS.orderStatus]: { label: 'Venter på betaling' },
+        },
+      });
+      throw new Error(
+        checkoutData?.message || 'Checkout fullførte ikke lagertrekket.'
+      );
+    }
+
+    // Først nå er lagertrekket bekreftet og ordren kan merkes ferdigbehandlet.
     await updateMondayOrder({
       apiKey: mondayApiKey,
       boardId: orderBoardId,
@@ -399,27 +451,6 @@ export async function POST(request: NextRequest) {
         [ORDER_COLUMNS.stockUpdated]: { checked: 'true' },
         [ORDER_COLUMNS.processedDate]: { date: norwegianDate() },
       },
-    });
-
-    const checkoutProduct = {
-      ...storedOrder.product,
-      shippingPrice: Number(
-        storedOrder.product.shippingPrice ?? storedOrder.shipping?.price ?? 0
-      ),
-      totalPrice: calculateExpectedTotal(storedOrder),
-    };
-
-    // Kaller checkout for e-post og lagertrekk
-    await fetch(`${getInternalBaseUrl(request)}/api/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        product: checkoutProduct,
-        customer: storedOrder.customer,
-        shipping: storedOrder.shipping,
-        payment: { reference, state },
-      }),
-      cache: 'no-store',
     });
 
     const deliveryMethod =
@@ -461,7 +492,7 @@ export async function POST(request: NextRequest) {
         message:
           error instanceof Error
             ? error.message
-            : 'Kunne ikke fullføre Vipps-ordren.',
+            : 'Kunne ikke fullfÃ¸re Vipps-ordren.',
       },
       { status: 500 }
     );

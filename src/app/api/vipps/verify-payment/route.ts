@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getVippsPaymentStatus } from '@/lib/vipps';
 
-const VERIFIED_STATES = new Set(['AUTHORIZED', 'CAPTURED']);
 const FINAL_FAILURE_STATES = new Set([
   'ABORTED',
   'CANCELLED',
@@ -23,34 +21,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/?payment_error=invalid_reference`);
     }
 
-    // Kjør complete-payment ÉN gang (uten dupliserende re-try)
-    try {
-      await fetch(`${baseUrl}/api/vipps/complete-payment`, {
+    const completeResponse = await fetch(
+      `${baseUrl}/api/vipps/complete-payment`,
+      {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference }),
         cache: 'no-store',
-      });
-    } catch (completeErr) {
-      console.error('Feil under kjørsel av complete-payment:', completeErr);
-    }
+      }
+    );
+    const completeData = await completeResponse.json();
+    const state = String(completeData?.state || 'UNKNOWN').toUpperCase();
 
-    const payment = await getVippsPaymentStatus(reference);
-    const state = String(payment?.state || 'UNKNOWN').toUpperCase();
-
-    if (VERIFIED_STATES.has(state)) {
+    if (completeResponse.ok && completeData?.success) {
       return NextResponse.redirect(
         `${baseUrl}/ordre-bekreftet?ordrenr=${encodeURIComponent(reference)}`
       );
+    }
+
+    if (completeData?.pending) {
+      return NextResponse.redirect(`${baseUrl}/?payment_pending=true`);
     }
 
     if (FINAL_FAILURE_STATES.has(state)) {
       return NextResponse.redirect(`${baseUrl}/?payment_cancelled=true`);
     }
 
-    return NextResponse.redirect(`${baseUrl}/?payment_pending=true`);
+    return NextResponse.redirect(
+      `${baseUrl}/?payment_error=order_processing&reference=${encodeURIComponent(reference)}`
+    );
   } catch (error) {
     console.error('Feil ved verifisering av Vipps-betaling:', error);
     return NextResponse.redirect(`${baseUrl}/?payment_error=system_error`);
