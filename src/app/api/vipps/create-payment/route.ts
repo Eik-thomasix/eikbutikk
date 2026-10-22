@@ -138,7 +138,10 @@ async function getVerifiedProduct(params: {
     const normalized = titles.map((title) => title.trim().toLowerCase());
     return columns.find((column) => {
       const title = column.column?.title?.trim().toLowerCase();
-      return title ? normalized.includes(title) : false;
+      if (!title) return false;
+      return normalized.some(
+        (candidate) => title === candidate || title.includes(candidate)
+      );
     });
   };
   const text = (titles: readonly string[]) => byTitle(titles)?.text?.trim() || '';
