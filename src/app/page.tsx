@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX,
+  ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX, Search,
   Loader2, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, ChevronDown,
 } from 'lucide-react';
 import { Product } from '@/lib/monday';
@@ -129,6 +129,8 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'recommended' | 'price-asc' | 'price-desc' | 'newest'>('recommended');
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -151,6 +153,24 @@ export default function HomePage() {
     if (stock <= 5) return { text: `${stock} på lager`, wrapperClass: 'bg-green-50 text-green-700 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> };
     return { text: 'Flere enn 5 på lager', wrapperClass: 'bg-green-50 text-green-700 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> };
   };
+
+  const visibleProducts = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('nb-NO');
+    const filtered = query
+      ? products.filter((product) =>
+          [product.name, product.itemNumber, product.category, product.shortInfo]
+            .filter(Boolean)
+            .some((value) => String(value).toLocaleLowerCase('nb-NO').includes(query))
+        )
+      : [...products];
+
+    if (sortOrder === 'price-asc') return filtered.sort((a, b) => a.salePrice - b.salePrice);
+    if (sortOrder === 'price-desc') return filtered.sort((a, b) => b.salePrice - a.salePrice);
+    if (sortOrder === 'newest') {
+      return filtered.sort((a, b) => (Date.parse(b.createdAt || '') || 0) - (Date.parse(a.createdAt || '') || 0));
+    }
+    return filtered;
+  }, [products, searchQuery, sortOrder]);
 
   const scrollToProducts = () => {
     const el = document.getElementById('produkter');
@@ -262,6 +282,29 @@ export default function HomePage() {
           </div>
         </div>
 
+        {!loading && products.length > 0 && (
+          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="block flex-1">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">Søk i tilbudene</span>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+                  <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Produkt, varenummer eller kategori..." className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100 sm:py-3" />
+                </div>
+              </label>
+              <label className="block sm:w-56">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">Sorter etter</span>
+                <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100 sm:py-3">
+                  <option value="recommended">Anbefalt</option>
+                  <option value="price-asc">Pris: lavest først</option>
+                  <option value="price-desc">Pris: høyest først</option>
+                  <option value="newest">Nyeste først</option>
+                </select>
+              </label>
+            </div>
+            <p className="mt-2 text-xs font-medium text-gray-500" aria-live="polite">{visibleProducts.length} tilbud funnet</p>
+          </div>
+        )}
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-2 py-20 text-gray-500">
             <Loader2 className="h-8 w-8 animate-spin text-red-600" />
@@ -270,12 +313,18 @@ export default function HomePage() {
         ) : products.length === 0 ? (
           <div className="mx-auto max-w-lg rounded-xl border border-gray-200 bg-white p-12 text-center">
             <PackageX className="mx-auto mb-3 h-12 w-12 text-gray-400" />
-            <h4 className="mb-1 text-lg font-bold text-gray-800">Ingen aktive varer ennå</h4>
-            <p className="text-sm text-gray-500">Når en vare blir utsolgt eller en ny vare lagres i Monday, oppdateres listen automatisk.</p>
+            <h4 className="mb-1 text-lg font-bold text-gray-800">Ingen tilbud er tilgjengelige akkurat nå</h4>
+            <p className="text-sm text-gray-500">Nye tilbud legges ut fortløpende. Kom gjerne tilbake snart.</p>
+          </div>
+        ) : visibleProducts.length === 0 ? (
+          <div className="mx-auto max-w-lg rounded-xl border border-gray-200 bg-white p-10 text-center">
+            <Search className="mx-auto mb-3 h-10 w-10 text-gray-400" aria-hidden="true" />
+            <h4 className="mb-1 text-lg font-bold text-gray-800">Ingen tilbud matcher søket ditt</h4>
+            <p className="text-sm text-gray-500">Prøv et annet søkeord.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
+            {visibleProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
