@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ShoppingBag, Phone, Mail, MapPin, Tag, Clock, Award, PackageX, Search,
@@ -20,25 +20,6 @@ type ProductCardProps = {
 };
 
 function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount, isNewItem, getStockInfo }: ProductCardProps) {
-  const cardRef = useRef<HTMLElement | null>(null);
-  const viewRegistered = useRef(false);
-
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card || viewRegistered.current) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting || viewRegistered.current) return;
-      viewRegistered.current = true;
-      observer.disconnect();
-      void fetch('/api/products/view', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id, type: 'home' }), keepalive: true,
-      }).catch((error) => console.error(`Kunne ikke registrere forsidevisning for ${product.id}:`, error));
-    }, { threshold: 0.5 });
-    observer.observe(card);
-    return () => observer.disconnect();
-  }, [product.id]);
-
   const discount = calculateDiscount(product.listPrice, product.salePrice);
   const savings = Math.max(0, product.listPrice - product.salePrice);
   const stock = Number.isFinite(product.stock) ? product.stock : 0;
@@ -47,7 +28,6 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
 
   return (
     <article
-      ref={cardRef}
       data-product-id={product.id}
       className={`group relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300 ease-out ${
         isOutOfStock
