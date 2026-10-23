@@ -323,11 +323,11 @@ async function sendShipmentEmail(params: {
           </div>
 
           <div style="background:#f3f4f6;border-radius:8px;padding:15px;font-size:13px;line-height:1.55;color:#374151;">
-            Sporingen kan bruke litt tid på Ã¥ bli synlig etter at sendingen er registrert hos Bring.
+            Sporingen kan bruke litt tid på å bli synlig etter at sendingen er registrert hos Bring.
           </div>
 
           <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:#4b5563;">
-            Spørsmål om bestillingen?<br>
+            SpÃ¸rsmål om bestillingen?<br>
             Eiksenteret Sortland, Verkstedveien 2, 8402 Sortland<br>
             Telefon: 76 12 13 60 · <a href="mailto:sortland@eiksenteret.no" style="color:#d71920;">sortland@eiksenteret.no</a>
           </p>
@@ -385,7 +385,7 @@ async function sendPickupReadyEmail(params: {
               <strong>Åpningstider:</strong> Mandag–fredag kl. 08:00–16:00<br>
               <strong>Ordrenummer:</strong> ${safe.orderId}
             </div>
-            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.55;">Oppgi gjerne ordrenummeret ved henting. Spørsmål? Ring 76 12 13 60 eller svar på denne e-posten.</p>
+            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.55;">Oppgi gjerne ordrenummeret ved henting. SpÃ¸rsmål? Ring 76 12 13 60 eller svar på denne e-posten.</p>
           </div>
         </div>
       </div>
@@ -413,7 +413,7 @@ export async function POST(request: NextRequest) {
 
     if (!itemId) return jsonError('Webhooken mangler item-ID.', 400);
 
-    const supportedStatus = [STATUS_READY, STATUS_READY_PICKUP, STATUS_PICKED_UP].includes(newStatus);
+    const supportedStatus = [STATUS_READY, STATUS_SENT, STATUS_READY_PICKUP, STATUS_PICKED_UP].includes(newStatus);
     if (
       boardId !== ORDER_BOARD_ID ||
       event.columnId !== SHIPPING_STATUS_COLUMN_ID ||
@@ -490,6 +490,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (newStatus === STATUS_SENT) {
+      if (deliveryMethod !== 'Postsending') {
+        await setShippingStatus(itemId, STATUS_FAILED);
+        return jsonError('Sendt kan bare brukes på postordrer.', 409);
+      }
+      await updatePickupOrder({
+        itemId,
+        orderStatus: STATUS_SENT,
+        moveToGroupId: COMPLETED_GROUP_ID,
+      });
+      return NextResponse.json({
+        success: true,
+        itemId,
+        orderId: order.orderId,
+        message: 'Postordren er markert som fysisk sendt og fullført.',
+      });
+    }
+
     if (deliveryMethod !== 'Postsending') {
       await setShippingStatus(itemId, STATUS_FAILED);
       return jsonError('Klar for sending kan bare brukes på postordrer.', 409);
@@ -535,9 +553,6 @@ export async function POST(request: NextRequest) {
       return jsonError('Bring-responsen mangler sporing.', 502);
     }
 
-    if (!testMode) {
-      await setShippingStatus(itemId, STATUS_SENT);
-    }
 
     const emailRecipient = await sendShipmentEmail({
       order: order.storedOrder,
