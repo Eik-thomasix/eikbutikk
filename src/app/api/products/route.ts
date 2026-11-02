@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import { fetchProductsFromMonday } from '@/lib/monday';
 
 const PRODUCT_CACHE_SECONDS = 60 * 10;
-const STALE_FALLBACK_SECONDS = 60 * 60 * 24;
 
 const getCachedProducts = unstable_cache(
   async () => {
@@ -11,15 +10,14 @@ const getCachedProducts = unstable_cache(
 
     const products = await fetchProductsFromMonday();
 
-    // En tom respons kan skyldes et midlertidig problem eller en nådd API-grense.
-    // Ikke legg en tom katalog i den delte cachen når butikken normalt har varer.
+    // Ikke legg en tom katalog i cachen når butikken normalt har varer.
     if (!Array.isArray(products) || products.length === 0) {
       throw new Error('Produktkatalogen kunne ikke oppdateres med en gyldig produktliste.');
     }
 
     return products;
   },
-  ['tilbudsboden-product-catalog-v1'],
+  ['tilbudsboden-product-catalog-v2'],
   {
     revalidate: PRODUCT_CACHE_SECONDS,
     tags: ['product-catalog'],
@@ -38,9 +36,10 @@ export async function GET() {
       },
       {
         headers: {
-          // Vercel/CDN kan gjenbruke svaret i 10 minutter og beholde en
-          // tidligere fungerende respons som reserve ved midlertidige feil.
-          'Cache-Control': `public, s-maxage=${PRODUCT_CACHE_SECONDS}, stale-while-revalidate=${STALE_FALLBACK_SECONDS}`,
+          // Monday-bildene bruker tidsbegrensede, signerte URL-er.
+          // Derfor caches katalogresponsen bare i 10 minutter og serveres
+          // ikke som gammel CDN-respons i mange timer.
+          'Cache-Control': `public, s-maxage=${PRODUCT_CACHE_SECONDS}, must-revalidate`,
         },
       }
     );
