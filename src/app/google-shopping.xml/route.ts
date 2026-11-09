@@ -4,7 +4,6 @@ import { getCachedProducts, PRODUCT_CACHE_SECONDS } from '@/lib/products-cache';
 
 const BASE_URL = 'https://tilbudsboden.no';
 
-// ASCII-only source for Norwegian labels avoids Windows PowerShell 5 encoding issues.
 const CONDITION_BY_REASON: Record<string, 'new' | 'used'> = {
   'Ny vare': 'new',
   'Utg\u00e5tt modell': 'new',
@@ -51,6 +50,7 @@ function itemXml(product: Product): string {
   const condition = CONDITION_BY_REASON[product.onlineSaleReason];
   const description = plainText(product.descriptionHtml) || product.shortInfo;
   const availability = product.stock > 0 ? 'in_stock' : 'out_of_stock';
+  const shippingLabel = product.pickupOnly ? 'henting' : 'postsending';
 
   return `
     <item>
@@ -64,6 +64,7 @@ function itemXml(product: Product): string {
       <g:condition>${condition}</g:condition>
       <g:brand>${xml(product.brand)}</g:brand>
       <g:mpn>${xml(product.itemNumber)}</g:mpn>
+      <g:shipping_label>${shippingLabel}</g:shipping_label>
     </item>`;
 }
 
