@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     'Tilbudsboden.no - Restpartier, kampanjevarer og gode kjøp | Eiksenteret Sortland',
   description:
     'Finn restpartier, kampanjevarer, utstillingsmodeller og ekstra gode kjøp fra Eiksenteret Sortland.',
+  verification: {
+    google: 'IDOxKmHsKuJqLQLx9U5NUGg7XqEC1iMFYxtZmMLqllo',
+  },
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
@@ -50,9 +53,7 @@ export default function RootLayout({
     <html lang="no">
       <body className="antialiased bg-gray-50 text-gray-900">
         {children}
-
         <Analytics />
-
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
             (function(c,l,a,r,i,t,y){
