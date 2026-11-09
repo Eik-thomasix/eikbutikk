@@ -1,28 +1,5 @@
-import { unstable_cache } from 'next/cache';
 import { NextResponse } from 'next/server';
-import { fetchProductsFromMonday } from '@/lib/monday';
-
-const PRODUCT_CACHE_SECONDS = 60 * 10;
-
-const getCachedProducts = unstable_cache(
-  async () => {
-    console.info('[products-cache] Oppdaterer produktkatalogen fra datakilden.');
-
-    const products = await fetchProductsFromMonday();
-
-    // Ikke legg en tom katalog i cachen når butikken normalt har varer.
-    if (!Array.isArray(products) || products.length === 0) {
-      throw new Error('Produktkatalogen kunne ikke oppdateres med en gyldig produktliste.');
-    }
-
-    return products;
-  },
-  ['tilbudsboden-product-catalog-v2'],
-  {
-    revalidate: PRODUCT_CACHE_SECONDS,
-    tags: ['product-catalog'],
-  }
-);
+import { getCachedProducts, PRODUCT_CACHE_SECONDS } from '@/lib/products-cache';
 
 export async function GET() {
   try {
@@ -36,9 +13,6 @@ export async function GET() {
       },
       {
         headers: {
-          // Monday-bildene bruker tidsbegrensede, signerte URL-er.
-          // Derfor caches katalogresponsen bare i 10 minutter og serveres
-          // ikke som gammel CDN-respons i mange timer.
           'Cache-Control': `public, s-maxage=${PRODUCT_CACHE_SECONDS}, must-revalidate`,
         },
       }
@@ -53,9 +27,7 @@ export async function GET() {
       },
       {
         status: 503,
-        headers: {
-          'Cache-Control': 'no-store',
-        },
+        headers: { 'Cache-Control': 'no-store' },
       }
     );
   }

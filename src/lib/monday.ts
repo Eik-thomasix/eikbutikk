@@ -14,6 +14,8 @@ export interface Product {
   createdAt: string;
   pickupOnly: boolean;
   views: number;
+  brand: string;
+  onlineSaleReason: string;
 }
 
 interface MondayAsset {
@@ -275,6 +277,8 @@ export async function fetchProductsFromMonday(): Promise<Product[]> {
           createdAt: item.created_at || new Date().toISOString(),
           pickupOnly,
           views: Number.parseInt(getColumnValue('Visninger'), 10) || 0,
+          brand: getColumnById('color_mm8yw741')?.text?.trim() || '',
+          onlineSaleReason: getColumnById('color_mm7zq3h9')?.text?.trim() || '',
         };
       })
       .filter((product): product is Product => product !== null);
