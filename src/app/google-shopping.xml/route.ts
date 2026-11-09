@@ -8,8 +8,8 @@ const CONDITION_BY_REASON: Record<string, 'new' | 'used'> = {
   'Ny vare': 'new',
   'Utg\u00e5tt modell': 'new',
   'Demokj\u00f8rt': 'used',
-  'Brukt': 'used',
-  'Lagerslitt': 'used',
+  Brukt: 'used',
+  Lagerslitt: 'used',
 };
 
 function xml(value: string): string {
@@ -36,13 +36,18 @@ function plainText(html: string): string {
 }
 
 function eligible(product: Product): boolean {
+  const hasValidShippingWeight =
+    product.pickupOnly ||
+    (Number.isFinite(product.weight) && product.weight > 0 && product.weight <= 70);
+
   return Boolean(
     CONDITION_BY_REASON[product.onlineSaleReason] &&
       product.brand &&
       product.itemNumber &&
       product.itemNumber !== 'Uten varenr' &&
       product.salePrice > 0 &&
-      product.images.some((url) => /^https?:\/\//i.test(url))
+      product.images.some((url) => /^https?:\/\//i.test(url)) &&
+      hasValidShippingWeight
   );
 }
 
@@ -51,6 +56,9 @@ function itemXml(product: Product): string {
   const description = plainText(product.descriptionHtml) || product.shortInfo;
   const availability = product.stock > 0 ? 'in_stock' : 'out_of_stock';
   const shippingLabel = product.pickupOnly ? 'henting' : 'postsending';
+  const shippingWeight = product.pickupOnly
+    ? ''
+    : `\n      <g:shipping_weight>${product.weight} kg</g:shipping_weight>`;
 
   return `
     <item>
@@ -64,7 +72,7 @@ function itemXml(product: Product): string {
       <g:condition>${condition}</g:condition>
       <g:brand>${xml(product.brand)}</g:brand>
       <g:mpn>${xml(product.itemNumber)}</g:mpn>
-      <g:shipping_label>${shippingLabel}</g:shipping_label>
+      <g:shipping_label>${shippingLabel}</g:shipping_label>${shippingWeight}
     </item>`;
 }
 
