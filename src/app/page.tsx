@@ -51,7 +51,7 @@ function ProductCard({ product, onOpenProduct, onBuyWithVipps, calculateDiscount
 
       {/* Produktbilde */}
       <div onClick={() => onOpenProduct(product.id)} className="relative flex h-32 cursor-pointer items-center justify-center overflow-hidden border-b border-gray-100 bg-gray-50/50 p-2 sm:h-52 sm:p-4">
-        <img src={product.images?.[0] || '/tilbudsbodenlogo.svg'} alt={product.name} className={`max-h-full max-w-full object-contain transition-transform duration-300 ease-out ${isOutOfStock ? 'grayscale' : 'group-hover:scale-105'}`} onError={(event) => { event.currentTarget.src = '/tilbudsbodenlogo.svg'; }} />
+        <img src={product.images?.length ? `/api/product-image/${product.id}/0` : '/tilbudsbodenlogo.svg'} alt={product.name} className={`max-h-full max-w-full object-contain transition-transform duration-300 ease-out ${isOutOfStock ? 'grayscale' : 'group-hover:scale-105'}`} onError={(event) => { event.currentTarget.src = '/tilbudsbodenlogo.svg'; }} />
       </div>
 
       {/* Produktinnhold */}

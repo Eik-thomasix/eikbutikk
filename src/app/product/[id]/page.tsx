@@ -90,7 +90,7 @@ export default function ProductDetailPage() {
         );
         if (found) {
           setProduct(found);
-          setSelectedImage(found.images?.[0] || '/honda.png');
+          setSelectedImage(found.images?.length ? `/api/product-image/${found.id}/0` : '/honda.png');
         }
       } catch (error) {
         console.error('Feil ved henting av produkt:', error);
@@ -234,7 +234,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  const productImages = product.images?.length ? product.images : ['/honda.png'];
+  const productImages = product.images?.length
+    ? product.images.map((_, index) => `/api/product-image/${product.id}/${index}`)
+    : ['/honda.png'];
   const discount =
     product.listPrice > product.salePrice
       ? Math.round(((product.listPrice - product.salePrice) / product.listPrice) * 100)
